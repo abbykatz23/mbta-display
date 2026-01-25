@@ -2,6 +2,8 @@ import asyncio
 import requests
 import os
 
+from models import PredictionResponse
+
 
 MBTA_API_KEY = os.environ["MBTA_API_KEY"]
 
@@ -15,7 +17,9 @@ INTERVAL_SECONDS = 30
 async def poll_loop():
     while True:
         try:
-            res = requests.get("https://api-v3.mbta.com/predictions?filter[stop]=70073&page[limit]=5&sort=arrival_time", headers=headers)
+            res = requests.get("https://api-v3.mbta.com/predictions?filter[stop]=70073&page[limit]=5&sort=arrival_time", headers=headers, verify=False)
+            res_data = res.json()
+            normalized_res = PredictionResponse.model_validate(res_data)
             print('res: ', res)
         except asyncio.CancelledError:
             raise
