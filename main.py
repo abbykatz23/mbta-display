@@ -1,25 +1,19 @@
 import asyncio
-import requests
 import os
 
 from models import PredictionResponse
+from mbta_client import MBTAClient
+from enums import StationID
 
-
-MBTA_API_KEY = os.environ["MBTA_API_KEY"]
-
-headers = {
-    "x-api-key": MBTA_API_KEY
-}
 
 INTERVAL_SECONDS = 30
 
 
-async def poll_loop():
+async def poll_loop(mbta_client: MBTAClient):
     while True:
         try:
-            res = requests.get("https://api-v3.mbta.com/predictions?filter[stop]=70073&page[limit]=5&sort=arrival_time", headers=headers, verify=False)
-            res_data = res.json()
-            normalized_res = PredictionResponse.model_validate(res_data)
+            client = MBTAClient()
+            res = client.get_prediction(StationID.CHARLES_MGH_ALEWIFE)
             print('res: ', res)
         except asyncio.CancelledError:
             raise
@@ -28,7 +22,8 @@ async def poll_loop():
 
 
 async def main():
-    task = asyncio.create_task(poll_loop())
+    mbta_client = MBTAClient()
+    task = asyncio.create_task(poll_loop(mbta_client))
     try:
         await task
     except asyncio.CancelledError:
