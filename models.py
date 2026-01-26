@@ -45,4 +45,4 @@ class Prediction(BaseModel):
 class PredictionResponse(BaseModel):
     data: List[Prediction]
     jsonapi: JsonApiVersion
-    links: Optional[Links]
+    links: Optional[Links] = None
