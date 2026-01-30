@@ -1,3 +1,6 @@
+python-dateutil
 pydantic
 pydantic_settings
+pyfiglet
 requests
+termcolor

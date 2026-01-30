@@ -17,7 +17,7 @@ class MBTAClient():
     PREDICTIONS_URL = urljoin(MBTA_BASE_URL, '/predictions')
 
     def get_prediction(self, station_id: StationID):
-        params = {'filter[stop]': station_id.value, 'page[limit]': 5, 'sort': 'arrival_time'}
+        params = {'filter[stop]': station_id.value, 'page[limit]': 10, 'sort': 'arrival_time'}
         headers = get_headers()
         res = requests.get(self.PREDICTIONS_URL, params=params, headers=headers, verify=False)
         res_data = res.json()
