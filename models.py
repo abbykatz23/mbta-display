@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 from datetime import datetime
 
 from pydantic import BaseModel, HttpUrl
@@ -11,9 +11,9 @@ class JsonApiVersion(BaseModel):
 
 
 class Links(BaseModel):
-    first: HttpUrl
-    last: HttpUrl
-    next: HttpUrl
+    first: Optional[HttpUrl] = None
+    last: Optional[HttpUrl] = None
+    next: Optional[HttpUrl] = None
 
 
 class PredictionAttributes(BaseModel):
@@ -27,7 +27,7 @@ class PredictionAttributes(BaseModel):
     schedule_relationship: Optional[ScheduleRelationship]
     status: Optional[Status]
     stop_sequence: int
-    update_type: UpdateType
+    update_type: Optional[UpdateType]
 
 
 class Relationship(BaseModel):
@@ -38,7 +38,7 @@ class Relationship(BaseModel):
 class Prediction(BaseModel):
     id: str
     attributes: PredictionAttributes
-    relationships: Dict[str, Dict[Literal["data"], Relationship]]
+    relationships: Any  # Dict[str, Dict[Literal["data"], Relationship]] -> maybe add this?
     type: DataType
 
 
