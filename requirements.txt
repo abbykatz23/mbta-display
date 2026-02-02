@@ -1,3 +1,4 @@
+pixoo
 python-dateutil
 pydantic
 pydantic_settings
