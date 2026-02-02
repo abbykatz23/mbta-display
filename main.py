@@ -2,14 +2,16 @@ import asyncio
 import os
 from datetime import datetime
 from dateutil.tz import tzoffset
+import requests
+from settings import settings
 from typing import Optional
 
 from pyfiglet import figlet_format
-from termcolor import colored
 
 from models import PredictionResponse
 from mbta_client import MBTAClient
 from enums import StationID
+from display import Display
 
 
 INTERVAL_SECONDS = 20
@@ -21,6 +23,10 @@ async def poll_loop(client: MBTAClient):
             time_zone = -18000
             tz = tzoffset(None, time_zone)
             now = datetime.now(tz)
+
+            display = Display()
+            display.black_screen()
+            display.sample_text()
 
             charles_mgh_alewife_prediction = client.get_prediction(StationID.CHARLES_MGH_ALEWIFE)
             charles_mgh_ashmont_braintree_prediction = client.get_prediction(StationID.CHARLES_MGH_ASHMONT_BRAINTREE)
