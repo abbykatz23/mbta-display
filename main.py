@@ -26,7 +26,10 @@ async def poll_loop(client: MBTAClient):
 
             display = Display()
             display.black_screen()
-            display.sample_text()
+            display.b_line_from_park_st()
+            display.c_line_from_park_st()
+            display.d_line_from_park_st()
+            display.e_line_from_park_st()
 
             charles_mgh_alewife_prediction = client.get_prediction(StationID.CHARLES_MGH_ALEWIFE)
             charles_mgh_ashmont_braintree_prediction = client.get_prediction(StationID.CHARLES_MGH_ASHMONT_BRAINTREE)
