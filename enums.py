@@ -23,11 +23,6 @@ class ScheduleRelationship(StrEnum):
 class Revenue(StrEnum):
     REVENUE = "REVENUE"
 
-
-class Status(StrEnum):
-    dummy = "DUMMY" #havent seen this filled out in the response yet
-
-
 class StationID(Enum):
     CHARLES_MGH_ALEWIFE = 70074
     CHARLES_MGH_ASHMONT_BRAINTREE = 70073
