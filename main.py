@@ -26,10 +26,12 @@ async def poll_loop(client: MBTAClient):
 
             display = Display()
             display.black_screen()
-            display.b_line_from_park_st()
-            display.c_line_from_park_st()
-            display.d_line_from_park_st()
-            display.e_line_from_park_st()
+            # display.b_line_from_park_st()
+            # display.c_line_from_park_st()
+            # display.d_line_from_park_st()
+            # display.e_line_from_park_st()
+            park_street_b_line = client.get_prediction(StationID.PARK_STREET_B)
+            display.smaller(2)
 
             charles_mgh_alewife_prediction = client.get_prediction(StationID.CHARLES_MGH_ALEWIFE)
             charles_mgh_ashmont_braintree_prediction = client.get_prediction(StationID.CHARLES_MGH_ASHMONT_BRAINTREE)
@@ -46,8 +48,6 @@ async def poll_loop(client: MBTAClient):
                 i += 1
             time_delta_until_train = arrival_time_alewife - now
             int(time_delta_until_train.total_seconds() // 60) + 1
-            print(figlet_format('charles/mgh alewife'))#, charles_mgh_alewife)
-            print(figlet_format('charles/mgh ashmont/braintree'))#, charles_mgh_alewife)
             # print('charles/mgh ashmont/braintree', charles_mgh_ashmont_braintree)
             await asyncio.sleep(10)
         except asyncio.CancelledError:
