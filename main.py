@@ -1,68 +1,64 @@
 import asyncio
-import os
 from datetime import datetime
 from dateutil.tz import tzoffset
-import requests
-from settings import settings
 from typing import Optional
 
-from pyfiglet import figlet_format
-
-from models import PredictionResponse
 from mbta_client import MBTAClient
 from enums import StationID
 from display import Display
 
-
 INTERVAL_SECONDS = 20
+EST = tzoffset(None, -18000)
 
 
-async def poll_loop(client: MBTAClient):
+async def poll_loop(mbta_client: MBTAClient, display: Display):
     while True:
         try:
-            time_zone = -18000
-            tz = tzoffset(None, time_zone)
-            now = datetime.now(tz)
+            now = datetime.now(EST)
 
-            display = Display()
-            display.black_screen()
-            # display.b_line_from_park_st()
-            # display.c_line_from_park_st()
-            # display.d_line_from_park_st()
-            # display.e_line_from_park_st()
-            park_street_b_line = client.get_prediction(StationID.PARK_STREET_B)
-            display.smaller(2)
+            (
+                alewife_currently_arriving,
+                alewife_mins_until_next_catchable_train,
+                alewife_mins_until_second_next_catchable_train,
+            ) = mbta_client.get_predictions_of_interest(
+                StationID.CHARLES_MGH_ALEWIFE, now, 9
+            )
 
-            charles_mgh_alewife_prediction = client.get_prediction(StationID.CHARLES_MGH_ALEWIFE)
-            charles_mgh_ashmont_braintree_prediction = client.get_prediction(StationID.CHARLES_MGH_ASHMONT_BRAINTREE)
+            (
+                ashmont_braintree_currently_arriving,
+                ashmont_braintree_mins_until_next_catchable_train,
+                ashmont_braintree_mins_until_second_next_catchable_train,
+            ) = mbta_client.get_predictions_of_interest(
+                StationID.CHARLES_MGH_ASHMONT_BRAINTREE, now, 9
+            )
+
+            display.display_train_statuses(
+                alewife_mins_until_next_catchable_train,
+                alewife_mins_until_second_next_catchable_train,
+                ashmont_braintree_mins_until_next_catchable_train,
+                ashmont_braintree_mins_until_second_next_catchable_train
+            )
+
             arrival_time_alewife: Optional[datetime] = None
 
-            #todo: add a file where you can specify the stations you want instead of hardcoding them
-
-            i = 0
-            while i < 10:
-                next_arrival = charles_mgh_alewife_prediction.data[i].attributes.arrival_time
-                if next_arrival and next_arrival > now:
-                    arrival_time_alewife = next_arrival
-                    break
-                i += 1
-            time_delta_until_train = arrival_time_alewife - now
-            int(time_delta_until_train.total_seconds() // 60) + 1
-            # print('charles/mgh ashmont/braintree', charles_mgh_ashmont_braintree)
-            await asyncio.sleep(10)
+            await asyncio.sleep(INTERVAL_SECONDS)
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            await asyncio.sleep(10)
+            await asyncio.sleep(INTERVAL_SECONDS)
 
 
 async def main():
     mbta_client = MBTAClient()
-    task = asyncio.create_task(poll_loop(mbta_client))
+    display = Display()
+    display.black_screen()
+    display.push_screen()
+    task = asyncio.create_task(poll_loop(mbta_client, display))
     try:
         await task
     except asyncio.CancelledError:
-        print('cancelled')
+        print("cancelled")
+
 
 if __name__ == "__main__":
     try:

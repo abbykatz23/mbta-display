@@ -9,12 +9,10 @@ class Display():
     def __init__(self):
         self.display = Pixoo(PIXOO_IP)
 
-    def _set_channel(self, channel:int = 3):
-        self.display.set_channel(channel)
-
     def black_screen(self):
-        self._set_channel()
         self.display.fill_rgb(0,0,0)
+
+    def push_screen(self):
         self.display.push()
 
     def sample_text(self):
@@ -30,61 +28,20 @@ class Display():
     def custom_text_payload(self, payload: dict):
         self.display.send_text(**payload)
 
-
-
-    def b_line_from_park_st(self):
-        payload = {"text": "B | 15 min",
-         "xy": (4, 0),
-         'color': (0, 255, 0),
-         'identifier': 3,
-         'font': 2,
-         'width': 58,
-         'movement_speed': 50}
-        self.display.send_text(**payload)
-
-    def c_line_from_park_st(self):
-        payload = {"text": "C | 16 min",
-         "xy": (2, 10),
-         'color': (0, 255, 0),
-         'identifier': 2,
-         'font': 2,
-         'width': 58,
-         'movement_speed': 50}
-        self.display.send_text(**payload)
-
-    def d_line_from_park_st(self):
-        payload = {"text": "D | 15 min",
-         "xy": (2, 20),
-         'color': (0, 255, 0),
-         'identifier': 1,
-         'font': 2,
-         'width': 58,
-         'movement_speed': 50}
-        self.display.send_text(**payload)
-
-    def e_line_from_park_st(self):
-        payload = {"text": "E | 9 min",
-         "xy": (4, 30),
-         'color': (0, 255, 0),
-         'identifier': 0,
-         'font': 2,
-         'width': 58,
-         'movement_speed': 50}
-        self.display.send_text(**payload)
-
-    def horizontal_line(self):
-        for x in range(64):
-            self.display.draw_pixel((x, 44), (0, 255, 0))
-        self.display.draw_pixel((11, 45), (0, 255, 0))
-        self.display.push()
-
-    def smaller(self, b_line_estimate: int):
-        self.display.draw_text(f"B |{str(b_line_estimate)} min...23", (4, 1), (0, 255, 0))
+    def display_train_statuses(
+            self,
+            alewife_min_1: int,
+            alewife_min_2: int,
+            ashmont_braintree_min_1: int,
+            ashmont_braintree_min_2: int,
+    ):
+        self.black_screen()
+        self.display.draw_text("B |15 min...23", (4, 1), (0, 255, 0))
         self.display.draw_text("C |15 min...23", (4, 7), (0, 255, 0))
         self.display.draw_text("D^|19 min...23", (4, 13), (0, 255, 0))
         self.display.draw_text("E^|19 min...23", (4, 19), (0, 255, 0))
-        self.display.draw_text("Alw|19 min...23", (0, 25), (255, 0, 0))
-        self.display.draw_text("A/B|19 min...23", (0, 31), (255, 0, 0))
+        self.display.draw_text(f"Alw|{alewife_min_1} min...{alewife_min_2}", (0, 25), (255, 0, 0))
+        self.display.draw_text(f"A/B|{ashmont_braintree_min_1} min...{ashmont_braintree_min_2}", (0, 31), (255, 0, 0))
         self.display.draw_text("Won|18 min...23", (0, 37), (0, 0, 255))
         self.display.draw_text("N |19 min...23", (4, 43), (255, 172, 28))
         self.display.draw_text("S |19 min...23", (4, 50), (255, 172, 28))

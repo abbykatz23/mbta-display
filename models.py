@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, List, Optional
 from datetime import datetime
 
 from pydantic import BaseModel, HttpUrl
 
-from enums import DataType, Revenue, ScheduleRelationship, Status, UpdateType
+from enums import DataType, Revenue, ScheduleRelationship, UpdateType
 
 
 class JsonApiVersion(BaseModel):
@@ -25,7 +25,7 @@ class PredictionAttributes(BaseModel):
     last_trip: bool
     revenue: Revenue
     schedule_relationship: Optional[ScheduleRelationship]
-    status: Optional[Status]
+    status: Optional[str]
     stop_sequence: int
     update_type: Optional[UpdateType]
 
