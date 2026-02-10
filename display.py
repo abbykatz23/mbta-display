@@ -30,19 +30,37 @@ class Display():
 
     def display_train_statuses(
             self,
-            alewife_min_1: int,
-            alewife_min_2: int,
-            ashmont_braintree_min_1: int,
-            ashmont_braintree_min_2: int,
+            b_min_to_nct_1: int,
+            b_min_to_nct_2: int,
+            c_min_to_nct_1: int,
+            c_min_to_nct_2: int,
+            d_min_to_nct_1: int,
+            d_min_to_nct_2: int,
+            e_min_to_nct_1: int,
+            e_min_to_nct_2: int,
+            north_d_min_to_nct_1: int,
+            north_d_min_to_nct_2: int,
+            north_e_min_to_nct_1: int,
+            north_e_min_to_nct_2: int,
+            alewife_min_to_nct_1: int,
+            alewife_mins_to_nct_2: int,
+            ashmont_braintree_min_to_nct_1: int,
+            ashmont_braintree_min_to_nct_2: int,
+            won_min_to_nct_1: int,
+            won_min_to_nct_2: int,
+            ol_n_min_to_nct_1: int,
+            ol_n_min_to_nct_2: int,
+            ol_s_min_to_nct_1: int,
+            ol_s_min_to_nct_2: int
     ):
-        self.black_screen()
-        self.display.draw_text("B |15 min...23", (4, 1), (0, 255, 0))
-        self.display.draw_text("C |15 min...23", (4, 7), (0, 255, 0))
-        self.display.draw_text("D^|19 min...23", (4, 13), (0, 255, 0))
-        self.display.draw_text("E^|19 min...23", (4, 19), (0, 255, 0))
-        self.display.draw_text(f"Alw|{alewife_min_1} min...{alewife_min_2}", (0, 25), (255, 0, 0))
-        self.display.draw_text(f"A/B|{ashmont_braintree_min_1} min...{ashmont_braintree_min_2}", (0, 31), (255, 0, 0))
-        self.display.draw_text("Won|18 min...23", (0, 37), (0, 0, 255))
-        self.display.draw_text("N |19 min...23", (4, 43), (255, 172, 28))
-        self.display.draw_text("S |19 min...23", (4, 50), (255, 172, 28))
+        self.black_screen()  # todo: have the westbound gl show the 4 most upcoming trains
+        self.display.draw_text(f"B |{b_min_to_nct_1} min...{b_min_to_nct_2}", (4, 1), (0, 255, 0))
+        self.display.draw_text(f"C |{c_min_to_nct_1} min...{c_min_to_nct_2}", (4, 7), (0, 255, 0))
+        self.display.draw_text(f"D^|{north_d_min_to_nct_1} min...{north_d_min_to_nct_2}", (4, 13), (0, 255, 0))
+        self.display.draw_text(f"E^|{north_e_min_to_nct_1} min...{north_e_min_to_nct_2}", (4, 19), (0, 255, 0))
+        self.display.draw_text(f"Alw|{alewife_min_to_nct_1} min...{alewife_mins_to_nct_2}", (0, 25), (255, 0, 0))
+        self.display.draw_text(f"A/B|{ashmont_braintree_min_to_nct_1} min...{ashmont_braintree_min_to_nct_2}", (0, 31), (255, 0, 0))
+        self.display.draw_text(f"Won|{won_min_to_nct_1} min...{won_min_to_nct_2}", (0, 37), (0, 0, 255))
+        self.display.draw_text(f"N |{ol_n_min_to_nct_1} min...{ol_n_min_to_nct_2}", (4, 43), (255, 172, 28))
+        self.display.draw_text(f"S |{ol_s_min_to_nct_1} min...{ol_s_min_to_nct_2}", (4, 50), (255, 172, 28))
         self.display.push()
