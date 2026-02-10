@@ -23,10 +23,10 @@ class MBTAClient:
     MBTA_BASE_URL = "https://api-v3.mbta.com"
     PREDICTIONS_URL = urljoin(MBTA_BASE_URL, "/predictions")
 
-    def _get_prediction(self, station_id: StationID):
+    def _get_prediction(self, station_id: StationID, limit=10):
         params = {
             "filter[stop]": station_id.value,
-            "page[limit]": 10,
+            "page[limit]": limit,
             "sort": "arrival_time",
         }
         headers = get_headers()
@@ -37,11 +37,109 @@ class MBTAClient:
         print("res: ", res)
         return PredictionResponse.model_validate(res_data)
 
+    def get_predictions_of_interest_gl_n(
+            self,
+            now: datetime,
+            min_to_walk_to_station: int
+    ) -> Tuple[bool, Optional[int], Optional[int], bool, Optional[int], Optional[int]]:
+        station_id = StationID.PARK_STREET_NORTH
+        #todo: put the specialiszation that this function provides elsewhere, DRY it up
+        predictions: PredictionResponse = self._get_prediction(station_id, 30)
+
+        north_d_currently_arriving: bool = (
+            False  # todo: improve naming? train_currently_arriving and train_is_arriving -> not great
+        )
+        north_d_min_to_nct_1: Optional[int] = None
+        north_d_min_to_nct_2: Optional[int] = None
+        north_e_currently_arriving: bool = (
+            False  # todo: improve naming? train_currently_arriving and train_is_arriving -> not great
+        )
+        north_e_min_to_nct_1: Optional[int] = None
+        north_e_min_to_nct_2: Optional[int] = None
+
+        for prediction in predictions.data:
+            arrival_time = prediction.attributes.arrival_time
+            relationships = prediction.relationships
+            e_or_d = None
+            if type(relationships) == dict and relationships.get('route'):
+                route = relationships.get('route')
+                if type(route) == dict and route.get('data'):
+                    route_data = route.get('data')
+                    if type(route_data) == dict:
+                        if route_data.get('id') == 'Green-D':  #todo: enum this
+                            e_or_d = 'd'
+                        elif route_data.get('id') == 'Green-E': #todo: enum this
+                            e_or_d = 'e'
+                    else:
+                        continue #todo: flatten all this my god
+                else:
+                    continue
+            else:
+                continue
+
+            if arrival_time and e_or_d == 'e':
+                if not north_e_currently_arriving and train_is_arriving(
+                    now, arrival_time
+                ):
+                    north_e_currently_arriving = True
+                    continue
+
+                min_until_train = int((arrival_time - now).total_seconds() // 60) + 1
+
+                if (
+                    not north_e_min_to_nct_1
+                    and min_until_train >= min_to_walk_to_station
+                ):
+                    north_e_min_to_nct_1 = min_until_train
+
+                elif (
+                    north_e_min_to_nct_1
+                    and not north_e_min_to_nct_2
+                    and min_until_train >= min_to_walk_to_station
+                ):
+                    north_e_min_to_nct_2 = min_until_train
+                    if north_d_min_to_nct_2:
+                        break
+
+            if arrival_time and e_or_d == 'd':
+                if not north_d_currently_arriving and train_is_arriving(
+                    now, arrival_time
+                ):
+                    north_d_currently_arriving = True
+                    continue
+
+                min_until_train = int((arrival_time - now).total_seconds() // 60) + 1
+
+                if (
+                    not north_d_min_to_nct_1
+                    and min_until_train >= min_to_walk_to_station
+                ):
+                    north_d_min_to_nct_1 = min_until_train
+
+                elif (
+                    north_d_min_to_nct_1
+                    and not north_d_min_to_nct_2
+                    and min_until_train >= min_to_walk_to_station
+                ):
+                    north_d_min_to_nct_2 = min_until_train
+                    if north_e_min_to_nct_2:
+                        break
+
+        return (
+            north_d_currently_arriving,
+            north_d_min_to_nct_1,
+            north_d_min_to_nct_2,
+            north_e_currently_arriving,
+            north_e_min_to_nct_1,
+            north_e_min_to_nct_2
+        )
+
+
     def get_predictions_of_interest(
         self,
         station_id: StationID,
         now: datetime,
-        min_to_walk_to_station,  # todo: put walking time to station elsewhere?
+        min_to_walk_to_station: int,  # todo: put walking time to station elsewhere?
     ) -> Tuple[bool, Optional[int], Optional[int]]:
         predictions: PredictionResponse = self._get_prediction(station_id)
 
