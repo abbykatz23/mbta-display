@@ -55,32 +55,46 @@ class Display():
     ):
         self.black_screen()  # todo: have the westbound gl show the 4 most upcoming trains
 
-        self.display.draw_text(f"Alw|{alewife_min_to_nct_1} min...{alewife_mins_to_nct_2}", (0, 0), (255, 0, 0))
-        self.display.draw_text(f"Ash|{ashmont_braintree_min_to_nct_1} min...{ashmont_braintree_min_to_nct_2}", (0, 6), (255, 0, 0))
+        self.display.draw_text("Union", (0, 0), (0, 255, 0))
+        self.display.draw_text("M/Tfts", (23, 0), (0, 255, 0))
+        self.display.draw_text("Won", (51, 0), (0, 0, 255))
 
-        self.display.draw_text(f"Won|{won_min_to_nct_1} min...{won_min_to_nct_2}", (0, 13), (0, 0, 255))
+        self.display.draw_text(f"{north_d_min_to_nct_1 or ''}", (6, 6), (0, 255, 0))
+        self.display.draw_text(f"{north_e_min_to_nct_1 or ''}", (30, 6), (0, 255, 0))
+        self.display.draw_text(f"{won_min_to_nct_1 or ''}", (53, 6), (0, 0, 255))
 
-        self.display.draw_text(f"Oak|{ol_n_min_to_nct_1} min...{ol_n_min_to_nct_2}", (0, 20), (255, 172, 28))
-        self.display.draw_text(f"For|{ol_s_min_to_nct_1} min...{ol_s_min_to_nct_2}", (0, 26), (255, 172, 28))
+        self.display.draw_text(f"{north_d_min_to_nct_2 or ''}", (6, 12), (0, 255, 0))
+        self.display.draw_text(f"{north_e_min_to_nct_2 or ''}", (30, 12), (0, 255, 0))
+        self.display.draw_text(f"{won_min_to_nct_2 or ''}", (53, 12), (0, 0, 255))
 
-        self.display.draw_text(f"Uni|{north_d_min_to_nct_1} min...{north_d_min_to_nct_2}", (0, 33), (0, 255, 0))
-        self.display.draw_text(f"Med|{north_e_min_to_nct_1} min...{north_e_min_to_nct_2}", (0, 39), (0, 255, 0))
+        self.display.draw_text("B", (6, 22), (0, 255, 0))
+        self.display.draw_text("C", (22, 22), (0, 255, 0))
+        self.display.draw_text("Ale", (34, 22), (255, 0, 0))
+        self.display.draw_text("Oak", (50, 22), (255, 172, 28))
 
-        self.display.draw_text("B   C   D   E", (6, 47), (0, 255, 0))
-        # self.display.draw_text(f"{b_min_to_nct_1}  {c_min_to_nct_1}  {d_min_to_nct_1}  {e_min_to_nct_1}",(4, 53), (0, 255, 0))
-        # self.display.draw_text(f"{b_min_to_nct_2}  {c_min_to_nct_2}  {d_min_to_nct_2 or ''}  {e_min_to_nct_2 or ''}", (4, 59), (0, 255, 0))
+        self.display.draw_text(f"{b_min_to_nct_1 or ''}", (4, 28), (0, 255, 0))
+        self.display.draw_text(f"{c_min_to_nct_1 or ''}", (20, 28), (0, 255, 0))
+        self.display.draw_text(f"{alewife_min_to_nct_1 or ''}", (36, 28), (255, 0, 0))
+        self.display.draw_text(f"{ol_n_min_to_nct_1 or ''}", (52, 28), (255, 172, 28))
 
-        self.display.draw_text(f"{b_min_to_nct_1 or ''}", (4, 53), (0, 255, 0))
-        self.display.draw_text(f"{c_min_to_nct_1 or ''}", (20, 53), (0, 255, 0))
-        self.display.draw_text(f"{d_min_to_nct_1 or ''}", (36, 53), (0, 255, 0))
-        self.display.draw_text(f"{e_min_to_nct_1 or ''}", (52, 53), (0, 255, 0))
+        self.display.draw_text(f"{b_min_to_nct_2 or ''}", (4, 34), (0, 255, 0))
+        self.display.draw_text(f"{c_min_to_nct_2 or ''}", (20, 34), (0, 255, 0))
+        self.display.draw_text(f"{alewife_mins_to_nct_2 or ''}", (36, 34), (255, 0, 0))
+        self.display.draw_text(f"{ol_n_min_to_nct_2 or ''}", (52, 34), (255, 172, 28))
 
-        self.display.draw_text(f"{b_min_to_nct_2 or ''}", (4, 59), (0, 255, 0))
-        self.display.draw_text(f"{c_min_to_nct_2 or ''}", (20, 59), (0, 255, 0))
-        self.display.draw_text(f"{d_min_to_nct_2 or ''}", (36, 59), (0, 255, 0))
-        self.display.draw_text(f"{e_min_to_nct_2 or ''}", (52, 59), (0, 255, 0))
+        self.display.draw_text("D", (6, 44), (0, 255, 0))
+        self.display.draw_text("E", (22, 44), (0, 255, 0))
+        self.display.draw_text("Ash", (34, 44), (255, 0, 0))
+        self.display.draw_text("For", (50, 44), (255, 172, 28))
 
-        # self.display.draw_text(f"B |{b_min_to_nct_1} min...{b_min_to_nct_2}", (4, 47), (0, 255, 0))
-        # self.display.draw_text(f"C |{c_min_to_nct_1} min...{c_min_to_nct_2}", (4, 53), (0, 255, 0))
-        # self.display.draw_text(f"D |{d_min_to_nct_1} min...{d_min_to_nct_2}", (4, 59), (0, 255, 0))
+        self.display.draw_text(f"{d_min_to_nct_1 or ''}", (4, 50), (0, 255, 0))
+        self.display.draw_text(f"{e_min_to_nct_1 or ''}", (20, 50), (0, 255, 0))
+        self.display.draw_text(f"{ashmont_braintree_min_to_nct_1 or ''}", (36, 50), (255, 0, 0))
+        self.display.draw_text(f"{ol_s_min_to_nct_1 or ''}", (52, 50), (255, 172, 28))
+
+        self.display.draw_text(f"{d_min_to_nct_2 or ''}", (4, 56), (0, 255, 0))
+        self.display.draw_text(f"{e_min_to_nct_2 or ''}", (20, 56), (0, 255, 0))
+        self.display.draw_text(f"{ashmont_braintree_min_to_nct_2 or ''}", (36, 56), (255, 0, 0))
+        self.display.draw_text(f"{ol_s_min_to_nct_2 or ''}", (52, 56), (255, 172, 28))
+
         self.display.push()
