@@ -90,7 +90,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 won_currently_arriving,
                 won_min_to_nct_1,
                 won_min_to_nct_2,
-            ) = mbta_client.get_predictions_of_interest(
+            ) = mbta_client.get_eol_predictions_of_interest(
                 StationID.BOWDOIN_WONDERLAND, now, commute_times[StationID.BOWDOIN_WONDERLAND]
             )
 
@@ -135,8 +135,6 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 ol_s_min_to_nct_2
             )
 
-            arrival_time_alewife: Optional[datetime] = None
-
             await asyncio.sleep(INTERVAL_SECONDS)
         except asyncio.CancelledError:
             raise
@@ -148,7 +146,6 @@ async def main():
     mbta_client = MBTAClient()
     display = Display()
     display.black_screen()
-    display.push_screen()
     task = asyncio.create_task(poll_loop(mbta_client, display))
     try:
         await task

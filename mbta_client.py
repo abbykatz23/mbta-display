@@ -134,6 +134,51 @@ class MBTAClient:
             north_e_min_to_nct_2
         )
 
+    def get_eol_predictions_of_interest(
+        self,
+        station_id: StationID,
+        now: datetime,
+        min_to_walk_to_station: int,  # todo: put walking time to station elsewhere?
+    ) -> Tuple[bool, Optional[int], Optional[int]]:
+        predictions: PredictionResponse = self._get_prediction(station_id)
+
+        train_currently_arriving: bool = (
+            False  # todo: improve naming? train_currently_arriving and train_is_arriving -> not great
+        )
+        mins_until_next_catchable_train: Optional[int] = None
+        mins_until_second_next_catchable_train: Optional[int] = None
+
+        for prediction in predictions.data:
+            departure_time = prediction.attributes.departure_time
+            if departure_time:
+                if not train_currently_arriving and train_is_arriving(
+                    now, departure_time
+                ):
+                    train_currently_arriving = True
+                    continue
+
+                min_until_train = int((departure_time - now).total_seconds() // 60) + 1
+
+                if (
+                    not mins_until_next_catchable_train
+                    and min_until_train >= min_to_walk_to_station
+                ):
+                    mins_until_next_catchable_train = min_until_train
+
+                elif (
+                    mins_until_next_catchable_train
+                    and not mins_until_second_next_catchable_train
+                    and min_until_train >= min_to_walk_to_station
+                ):
+                    mins_until_second_next_catchable_train = min_until_train
+                    break
+
+        return (
+            train_currently_arriving,
+            mins_until_next_catchable_train,
+            mins_until_second_next_catchable_train,
+        )
+
 
     def get_predictions_of_interest(
         self,
