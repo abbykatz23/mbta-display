@@ -53,7 +53,7 @@ class Display():
             ol_s_min_to_nct_1: int,
             ol_s_min_to_nct_2: int
     ):
-        self.black_screen()  # todo: have the westbound gl show the 4 most upcoming trains
+        self.black_screen()
 
         self.display.draw_text("Union", (0, 0), (0, 255, 0))
         self.display.draw_text("M/Tfts", (23, 0), (0, 255, 0))
