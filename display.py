@@ -1,4 +1,5 @@
 from pixoo import Pixoo
+import time
 
 from settings import settings
 from enums import TextColor
@@ -28,6 +29,24 @@ class Display():
         )
     def custom_text_payload(self, payload: dict):
         self.display.send_text(**payload)
+
+    def blink_exclamation(
+            self,
+            color: tuple[int, int, int],
+            location: tuple[int, int] = (2, 17),
+            blinks: int = 3,
+            on_seconds: float = 0.2,
+            off_seconds: float = 0.2,
+    ):
+        top_left = location
+        bottom_right = (location[0] + 2, location[1] + 4)
+        for _ in range(blinks):
+            self.display.draw_text("!", top_left, color)
+            self.display.push()
+            time.sleep(on_seconds)
+            self.display.draw_filled_rectangle(top_left, bottom_right, (0, 0, 0))
+            self.display.push()
+            time.sleep(off_seconds)
 
     def display_train_statuses(
             self,
