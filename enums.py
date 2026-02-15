@@ -41,3 +41,9 @@ class RouteID(Enum):
     GREEN_D = "Green-D"
     GREEN_E = "Green-E"
 
+
+class TextColor(Enum):
+    RED = (218, 41, 28)
+    ORANGE = (237, 139, 0)
+    GREEN = (0, 132, 61)
+    BLUE = (0, 61, 165)
