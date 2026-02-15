@@ -23,6 +23,7 @@ class ScheduleRelationship(StrEnum):
 class Revenue(StrEnum):
     REVENUE = "REVENUE"
 
+
 class StationID(Enum):
     CHARLES_MGH_ALEWIFE = 70074
     CHARLES_MGH_ASHMONT_BRAINTREE = 70073
@@ -34,3 +35,9 @@ class StationID(Enum):
     BOWDOIN_WONDERLAND = 70038
     DTC_OL_OAK_GROVE = 70021
     DTC_OL_FOREST_HILLS = 70020
+
+
+class RouteID(Enum):
+    GREEN_D = "Green-D"
+    GREEN_E = "Green-E"
+

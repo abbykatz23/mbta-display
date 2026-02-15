@@ -3,7 +3,7 @@ import requests
 from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urljoin
 
-from enums import StationID
+from enums import RouteID, StationID
 from settings import settings
 from models import PredictionResponse
 
@@ -61,14 +61,14 @@ class MBTAClient:
             arrival_time = prediction.attributes.arrival_time
             relationships = prediction.relationships
             e_or_d = None
-            if type(relationships) == dict and relationships.get('route'):
+            if isinstance(relationships, dict) and relationships.get('route'):
                 route = relationships.get('route')
-                if type(route) == dict and route.get('data'):
+                if isinstance(route, dict) and route.get('data'):
                     route_data = route.get('data')
-                    if type(route_data) == dict:
-                        if route_data.get('id') == 'Green-D':  #todo: enum this
+                    if isinstance(route_data, dict):
+                        if route_data.get('id') == RouteID.GREEN_D.value:
                             e_or_d = 'd'
-                        elif route_data.get('id') == 'Green-E': #todo: enum this
+                        elif route_data.get('id') == RouteID.GREEN_E.value:
                             e_or_d = 'e'
                     else:
                         continue #todo: flatten all this my god
