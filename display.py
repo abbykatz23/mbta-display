@@ -1,6 +1,7 @@
 from pixoo import Pixoo
 
 from settings import settings
+from enums import TextColor
 
 PIXOO_IP = settings.pixoo_ip_address
 
@@ -43,7 +44,7 @@ class Display():
             north_e_min_to_nct_1: int,
             north_e_min_to_nct_2: int,
             alewife_min_to_nct_1: int,
-            alewife_mins_to_nct_2: int,
+            alewife_min_to_nct_2: int,
             ashmont_braintree_min_to_nct_1: int,
             ashmont_braintree_min_to_nct_2: int,
             won_min_to_nct_1: int,
@@ -55,46 +56,46 @@ class Display():
     ):
         self.black_screen()
 
-        self.display.draw_text("Union", (0, 0), (0, 255, 0))
-        self.display.draw_text("M/Tfts", (23, 0), (0, 255, 0))
-        self.display.draw_text("Won", (51, 0), (0, 0, 255))
+        self.display.draw_text("Union", (0, 0), TextColor.GREEN.value)
+        self.display.draw_text("M/Tfts", (23, 0), TextColor.GREEN.value)
+        self.display.draw_text("Won", (51, 0), TextColor.BLUE.value)
 
-        self.display.draw_text(f"{north_d_min_to_nct_1 or ''}", (6, 6), (0, 255, 0))
-        self.display.draw_text(f"{north_e_min_to_nct_1 or ''}", (30, 6), (0, 255, 0))
-        self.display.draw_text(f"{won_min_to_nct_1 or ''}", (53, 6), (0, 0, 255))
+        self.display.draw_text(f"{north_d_min_to_nct_1 or ''}", (6, 6), TextColor.GREEN.value)
+        self.display.draw_text(f"{north_e_min_to_nct_1 or ''}", (30, 6), TextColor.GREEN.value)
+        self.display.draw_text(f"{won_min_to_nct_1 or ''}", (53, 6), TextColor.BLUE.value)
 
-        self.display.draw_text(f"{north_d_min_to_nct_2 or ''}", (6, 12), (0, 255, 0))
-        self.display.draw_text(f"{north_e_min_to_nct_2 or ''}", (30, 12), (0, 255, 0))
-        self.display.draw_text(f"{won_min_to_nct_2 or ''}", (53, 12), (0, 0, 255))
+        self.display.draw_text(f"{north_d_min_to_nct_2 or ''}", (6, 12), TextColor.GREEN.value)
+        self.display.draw_text(f"{north_e_min_to_nct_2 or ''}", (30, 12), TextColor.GREEN.value)
+        self.display.draw_text(f"{won_min_to_nct_2 or ''}", (53, 12), TextColor.BLUE.value)
 
-        self.display.draw_text("B", (6, 22), (0, 255, 0))
-        self.display.draw_text("C", (22, 22), (0, 255, 0))
-        self.display.draw_text("Ale", (34, 22), (255, 0, 0))
-        self.display.draw_text("Oak", (50, 22), (255, 172, 28))
+        self.display.draw_text("B", (6, 22), TextColor.GREEN.value)
+        self.display.draw_text("C", (22, 22), TextColor.GREEN.value)
+        self.display.draw_text("Ale", (34, 22), TextColor.RED.value)
+        self.display.draw_text("Oak", (50, 22), TextColor.ORANGE.value)
 
-        self.display.draw_text(f"{b_min_to_nct_1 or ''}", (4, 28), (0, 255, 0))
-        self.display.draw_text(f"{c_min_to_nct_1 or ''}", (20, 28), (0, 255, 0))
-        self.display.draw_text(f"{alewife_min_to_nct_1 or ''}", (36, 28), (255, 0, 0))
-        self.display.draw_text(f"{ol_n_min_to_nct_1 or ''}", (52, 28), (255, 172, 28))
+        self.display.draw_text(f"{b_min_to_nct_1 or ''}", (4, 28), TextColor.GREEN.value)
+        self.display.draw_text(f"{c_min_to_nct_1 or ''}", (20, 28), TextColor.GREEN.value)
+        self.display.draw_text(f"{alewife_min_to_nct_1 or ''}", (36, 28), TextColor.RED.value)
+        self.display.draw_text(f"{ol_n_min_to_nct_1 or ''}", (52, 28), TextColor.ORANGE.value)
 
-        self.display.draw_text(f"{b_min_to_nct_2 or ''}", (4, 34), (0, 255, 0))
-        self.display.draw_text(f"{c_min_to_nct_2 or ''}", (20, 34), (0, 255, 0))
-        self.display.draw_text(f"{alewife_mins_to_nct_2 or ''}", (36, 34), (255, 0, 0))
-        self.display.draw_text(f"{ol_n_min_to_nct_2 or ''}", (52, 34), (255, 172, 28))
+        self.display.draw_text(f"{b_min_to_nct_2 or ''}", (4, 34), TextColor.GREEN.value)
+        self.display.draw_text(f"{c_min_to_nct_2 or ''}", (20, 34), TextColor.GREEN.value)
+        self.display.draw_text(f"{alewife_min_to_nct_2 or ''}", (36, 34), TextColor.RED.value)
+        self.display.draw_text(f"{ol_n_min_to_nct_2 or ''}", (52, 34), TextColor.ORANGE.value)
 
-        self.display.draw_text("D", (6, 44), (0, 255, 0))
-        self.display.draw_text("E", (22, 44), (0, 255, 0))
-        self.display.draw_text("Ash", (34, 44), (255, 0, 0))
-        self.display.draw_text("For", (50, 44), (255, 172, 28))
+        self.display.draw_text("D", (6, 44), TextColor.GREEN.value)
+        self.display.draw_text("E", (22, 44), TextColor.GREEN.value)
+        self.display.draw_text("Ash", (34, 44), TextColor.RED.value)
+        self.display.draw_text("For", (50, 44), TextColor.ORANGE.value)
 
-        self.display.draw_text(f"{d_min_to_nct_1 or ''}", (4, 50), (0, 255, 0))
-        self.display.draw_text(f"{e_min_to_nct_1 or ''}", (20, 50), (0, 255, 0))
-        self.display.draw_text(f"{ashmont_braintree_min_to_nct_1 or ''}", (36, 50), (255, 0, 0))
-        self.display.draw_text(f"{ol_s_min_to_nct_1 or ''}", (52, 50), (255, 172, 28))
+        self.display.draw_text(f"{d_min_to_nct_1 or ''}", (4, 50), TextColor.GREEN.value)
+        self.display.draw_text(f"{e_min_to_nct_1 or ''}", (20, 50), TextColor.GREEN.value)
+        self.display.draw_text(f"{ashmont_braintree_min_to_nct_1 or ''}", (36, 50), TextColor.RED.value)
+        self.display.draw_text(f"{ol_s_min_to_nct_1 or ''}", (52, 50), TextColor.ORANGE.value)
 
-        self.display.draw_text(f"{d_min_to_nct_2 or ''}", (4, 56), (0, 255, 0))
-        self.display.draw_text(f"{e_min_to_nct_2 or ''}", (20, 56), (0, 255, 0))
-        self.display.draw_text(f"{ashmont_braintree_min_to_nct_2 or ''}", (36, 56), (255, 0, 0))
-        self.display.draw_text(f"{ol_s_min_to_nct_2 or ''}", (52, 56), (255, 172, 28))
+        self.display.draw_text(f"{d_min_to_nct_2 or ''}", (4, 56), TextColor.GREEN.value)
+        self.display.draw_text(f"{e_min_to_nct_2 or ''}", (20, 56), TextColor.GREEN.value)
+        self.display.draw_text(f"{ashmont_braintree_min_to_nct_2 or ''}", (36, 56), TextColor.RED.value)
+        self.display.draw_text(f"{ol_s_min_to_nct_2 or ''}", (52, 56), TextColor.ORANGE.value)
 
         self.display.push()

@@ -4,8 +4,9 @@ from dateutil.tz import tzoffset
 from typing import Optional
 
 from mbta_client import MBTAClient
-from enums import StationID
+from enums import StationID, RouteID
 from display import Display
+from settings import COMMUTE_TIMES
 
 INTERVAL_SECONDS = 20
 EST = tzoffset(None, -18000)
@@ -16,66 +17,63 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
         try:
             now = datetime.now(EST)
 
-            commute_times = {
-                StationID.PARK_STREET_B: 11,
-                StationID.PARK_STREET_C: 11,
-                StationID.PARK_STREET_D: 11,
-                StationID.PARK_STREET_E: 11,
-                StationID.PARK_STREET_NORTH: 11,
-                StationID.CHARLES_MGH_ALEWIFE: 9,
-                StationID.CHARLES_MGH_ASHMONT_BRAINTREE: 9,
-                StationID.BOWDOIN_WONDERLAND: 9,
-                StationID.DTC_OL_FOREST_HILLS: 13,
-                StationID.DTC_OL_OAK_GROVE: 13
-            }
-
             (
                 gl_north_currently_arriving,
                 b_min_to_nct_1,
                 b_min_to_nct_2,
             ) = mbta_client.get_predictions_of_interest(
-                StationID.PARK_STREET_B, now, commute_times[StationID.PARK_STREET_B]
+                StationID.PARK_STREET_B, now, COMMUTE_TIMES[StationID.PARK_STREET_B]
             )
             (
                 gl_north_currently_arriving,
                 c_min_to_nct_1,
                 c_min_to_nct_2,
             ) = mbta_client.get_predictions_of_interest(
-                StationID.PARK_STREET_C, now, commute_times[StationID.PARK_STREET_C]
+                StationID.PARK_STREET_C, now, COMMUTE_TIMES[StationID.PARK_STREET_C]
             )
             (
                 gl_north_currently_arriving,
                 d_min_to_nct_1,
                 d_min_to_nct_2,
             ) = mbta_client.get_predictions_of_interest(
-                StationID.PARK_STREET_D, now, commute_times[StationID.PARK_STREET_D]
+                StationID.PARK_STREET_D, now, COMMUTE_TIMES[StationID.PARK_STREET_D]
             )
             (
                 gl_north_currently_arriving,
                 e_min_to_nct_1,
                 e_min_to_nct_2,
             ) = mbta_client.get_predictions_of_interest(
-                StationID.PARK_STREET_E, now, commute_times[StationID.PARK_STREET_E]
+                StationID.PARK_STREET_E, now, COMMUTE_TIMES[StationID.PARK_STREET_E]
             )
 
             (
                 north_d_currently_arriving,
                 north_d_min_to_nct_1,
                 north_d_min_to_nct_2,
+            ) = mbta_client.get_predictions_of_interest(
+                StationID.PARK_STREET_NORTH,
+                now,
+                COMMUTE_TIMES[StationID.PARK_STREET_NORTH],
+                RouteID.GREEN_D,
+            )
+
+            (
                 north_e_currently_arriving,
                 north_e_min_to_nct_1,
-                north_e_min_to_nct_2
-            ) = mbta_client.get_predictions_of_interest_gl_n(
-                now, commute_times[StationID.PARK_STREET_NORTH]
-            )  #TODO: split these out into northern e and northern d predictions
-
+                north_e_min_to_nct_2,
+            ) = mbta_client.get_predictions_of_interest(
+                StationID.PARK_STREET_NORTH,
+                now,
+                COMMUTE_TIMES[StationID.PARK_STREET_NORTH],
+                RouteID.GREEN_E,
+            )
 
             (
                 alewife_currently_arriving,
                 alewife_min_to_nct_1,
                 alewife_min_to_nct_2,
             ) = mbta_client.get_predictions_of_interest(
-                StationID.CHARLES_MGH_ALEWIFE, now, commute_times[StationID.CHARLES_MGH_ALEWIFE]
+                StationID.CHARLES_MGH_ALEWIFE, now, COMMUTE_TIMES[StationID.CHARLES_MGH_ALEWIFE]
             )
 
             (
@@ -83,7 +81,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 ashmont_braintree_min_to_nct_1,
                 ashmont_braintree_min_to_nct_2,
             ) = mbta_client.get_predictions_of_interest(
-                StationID.CHARLES_MGH_ASHMONT_BRAINTREE, now, commute_times[StationID.CHARLES_MGH_ASHMONT_BRAINTREE]
+                StationID.CHARLES_MGH_ASHMONT_BRAINTREE, now, COMMUTE_TIMES[StationID.CHARLES_MGH_ASHMONT_BRAINTREE]
             )
 
             (
@@ -91,7 +89,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 won_min_to_nct_1,
                 won_min_to_nct_2,
             ) = mbta_client.get_eol_predictions_of_interest(
-                StationID.BOWDOIN_WONDERLAND, now, commute_times[StationID.BOWDOIN_WONDERLAND]
+                StationID.BOWDOIN_WONDERLAND, now, COMMUTE_TIMES[StationID.BOWDOIN_WONDERLAND]
             )
 
             (
@@ -99,7 +97,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 ol_n_min_to_nct_1,
                 ol_n_min_to_nct_2,
             ) = mbta_client.get_predictions_of_interest(
-                StationID.DTC_OL_OAK_GROVE, now, commute_times[StationID.DTC_OL_OAK_GROVE]
+                StationID.DTC_OL_OAK_GROVE, now, COMMUTE_TIMES[StationID.DTC_OL_OAK_GROVE]
             )
 
             (
@@ -107,7 +105,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 ol_s_min_to_nct_1,
                 ol_s_min_to_nct_2,
             ) = mbta_client.get_predictions_of_interest(
-                StationID.DTC_OL_FOREST_HILLS, now, commute_times[StationID.DTC_OL_FOREST_HILLS]
+                StationID.DTC_OL_FOREST_HILLS, now, COMMUTE_TIMES[StationID.DTC_OL_FOREST_HILLS]
             )
 
             display.display_train_statuses(
