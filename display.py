@@ -13,6 +13,7 @@ class Display():
     BOTTOM_RIGHT_ALERT_LOCATION = (61, 41)
     BODY_BG_FACTOR = 0.16
     HEADER_BG_FACTOR = 0.24
+    HEADER_GREEN_BLUE_BG_FACTOR = 0.28
 
     def __init__(self):
         self.display = Pixoo(PIXOO_IP)
@@ -28,10 +29,10 @@ class Display():
         dark_red = tuple(int(channel * self.BODY_BG_FACTOR) for channel in TextColor.RED.value)
         dark_orange = tuple(int(channel * self.BODY_BG_FACTOR) for channel in TextColor.ORANGE.value)
         dark_blue = tuple(int(channel * self.BODY_BG_FACTOR) for channel in TextColor.BLUE.value)
-        light_green = tuple(int(channel * self.HEADER_BG_FACTOR) for channel in TextColor.GREEN.value)
+        light_green = tuple(int(channel * self.HEADER_GREEN_BLUE_BG_FACTOR) for channel in TextColor.GREEN.value)
         light_red = tuple(int(channel * self.HEADER_BG_FACTOR) for channel in TextColor.RED.value)
         light_orange = tuple(int(channel * self.HEADER_BG_FACTOR) for channel in TextColor.ORANGE.value)
-        light_blue = tuple(int(channel * self.HEADER_BG_FACTOR) for channel in TextColor.BLUE.value)
+        light_blue = tuple(int(channel * self.HEADER_GREEN_BLUE_BG_FACTOR) for channel in TextColor.BLUE.value)
 
         # Top section: green on left/middle, blue on right for Wonderland.
         self.display.draw_filled_rectangle((0, 0), (48, 16), dark_green)
@@ -70,10 +71,10 @@ class Display():
         dark_red = self._scaled_color(TextColor.RED.value, self.BODY_BG_FACTOR)
         dark_orange = self._scaled_color(TextColor.ORANGE.value, self.BODY_BG_FACTOR)
         dark_blue = self._scaled_color(TextColor.BLUE.value, self.BODY_BG_FACTOR)
-        light_green = self._scaled_color(TextColor.GREEN.value, self.HEADER_BG_FACTOR)
+        light_green = self._scaled_color(TextColor.GREEN.value, self.HEADER_GREEN_BLUE_BG_FACTOR)
         light_red = self._scaled_color(TextColor.RED.value, self.HEADER_BG_FACTOR)
         light_orange = self._scaled_color(TextColor.ORANGE.value, self.HEADER_BG_FACTOR)
-        light_blue = self._scaled_color(TextColor.BLUE.value, self.HEADER_BG_FACTOR)
+        light_blue = self._scaled_color(TextColor.BLUE.value, self.HEADER_GREEN_BLUE_BG_FACTOR)
 
         # Train lanes are always black.
         if 17 <= y <= 21 or 41 <= y <= 45:
@@ -236,7 +237,12 @@ class Display():
         right = min(63, x + width - 1)
 
         # Very dark proportional tint of the text color.
-        bg = tuple(max(0, min(255, int(channel * self.HEADER_BG_FACTOR))) for channel in color)
+        bg_factor = (
+            self.HEADER_GREEN_BLUE_BG_FACTOR
+            if color in (TextColor.GREEN.value, TextColor.BLUE.value)
+            else self.HEADER_BG_FACTOR
+        )
+        bg = tuple(max(0, min(255, int(channel * bg_factor))) for channel in color)
         self.display.draw_filled_rectangle((x, top), (right, bottom), bg)
         self.draw_station_label(text, location, color, glyph_clear_color=bg)
 
