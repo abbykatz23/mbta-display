@@ -1,5 +1,6 @@
 from pixoo import Pixoo
 import time
+from PIL import Image
 
 from settings import settings
 from enums import TextColor
@@ -29,6 +30,59 @@ class Display():
         )
     def custom_text_payload(self, payload: dict):
         self.display.send_text(**payload)
+
+    def animate_train_band(self,sprite_path: str, y: int = 20, fps: int = 12, loops: int = 1):
+        """
+        Animate a small sprite (e.g., 26x5) left-to-right across the Pixoo at a fixed y.
+        Clears only the affected band each frame for stability.
+        """
+
+        sprite = Image.open(sprite_path).convert("RGBA")
+        sw, sh = sprite.size
+        display = self.display
+
+        if sh != 5:
+            raise ValueError(f"Expected sprite height 5px, got {sh}px")
+
+        dt = 1 / fps
+
+        def clear_band():
+            # Clear only the rows y..y+4 to black
+            for yy in range(y, y + sh):
+                if 0 <= yy < 64:
+                    for xx in range(64):
+                        display.draw_pixel((xx, yy), (0, 0, 0))
+
+        def draw_sprite_at(x0: int):
+            # Clear just the band where the train lives
+            clear_band()
+
+            # Draw sprite pixels
+            for sy in range(sh):
+                dy = y + sy
+                if dy < 0 or dy >= 64:
+                    continue
+
+                for sx in range(sw):
+                    dx = x0 + sx
+                    if dx < 0 or dx >= 64:
+                        continue
+
+                    r, g, b, a = sprite.getpixel((sx, sy))
+                    if a < 10:
+                        continue  # transparent
+
+                    display.draw_pixel((dx, dy), (r, g, b))
+
+            self.push_screen()
+        # Move fully off-screen left -> fully off-screen right
+        start_x = -sw
+        end_x = 64
+
+        for _ in range(loops):
+            for x in range(start_x, end_x + 1):
+                draw_sprite_at(x)
+                time.sleep(dt)
 
     def blink_exclamation(
             self,
@@ -116,5 +170,7 @@ class Display():
         self.display.draw_text(f"{e_min_to_nct_2 or ''}", (20, 56), TextColor.GREEN.value)
         self.display.draw_text(f"{ashmont_braintree_min_to_nct_2 or ''}", (36, 56), TextColor.RED.value)
         self.display.draw_text(f"{ol_s_min_to_nct_2 or ''}", (52, 56), TextColor.ORANGE.value)
+
+        self.animate_train_band("red_line.png", y=17, fps=25, loops=2)
 
         self.display.push()

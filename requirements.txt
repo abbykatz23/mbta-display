@@ -1,3 +1,4 @@
+pillow
 pixoo
 python-dateutil
 pydantic
