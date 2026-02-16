@@ -170,7 +170,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
 
 
             if alert_color and alert_location:
-                display.blink_exclamation(alert_color, location=alert_location)
+                display.blink_and_animate_arrival(alert_color, location=alert_location)
 
             await asyncio.sleep(INTERVAL_SECONDS)
         except asyncio.CancelledError:

@@ -9,6 +9,9 @@ PIXOO_IP = settings.pixoo_ip_address
 
 
 class Display():
+    TOP_LEFT_ALERT_LOCATION = (2, 17)
+    BOTTOM_RIGHT_ALERT_LOCATION = (61, 39)
+
     def __init__(self):
         self.display = Pixoo(PIXOO_IP)
 
@@ -31,59 +34,98 @@ class Display():
     def custom_text_payload(self, payload: dict):
         self.display.send_text(**payload)
 
-    def draw_custom_f_glyph(self, location: tuple[int, int], color: tuple[int, int, int]):
+    def draw_station_label(self, text: str, location: tuple[int, int], color: tuple[int, int, int]):
         """
-        Draw a custom lowercase f shape:
+        Draw a station label, patching custom glyphs where needed.
+
+        Custom lowercase f:
         XXX
         X
         XX
         X
-        """
-        x, y = location
-        f_pixels = (
-            (0, 1), (1, 1), (2, 1),
-            (0, 2),
-            (0, 3), (1, 3),
-            (0, 4),
-        )
-        for dx, dy in f_pixels:
-            self.display.draw_pixel((x + dx, y + dy), color)
 
-    def draw_custom_for_label(self, location: tuple[int, int], color: tuple[int, int, int]):
-        """Draw "for" with the custom lowercase f shape."""
-        x, y = location
-
-        self.draw_custom_f_glyph((x, y), color)
-
-        # Draw the rest of the label with the default font.
-        self.display.draw_text("or", (x + 4, y), color)
-
-    def draw_custom_mtfts_label(self, location: tuple[int, int], color: tuple[int, int, int]):
-        """
-        Draw "m/tfts" with custom slash and lowercase f shapes.
-
-        Slash shape:
+        Custom slash:
           X
          X
          X
         X
+
+        Custom lowercase o / uppercase O:
+        fill top-left and bottom-right corners.
         """
         x, y = location
+        self.display.draw_text(text, (x, y), color)
 
-        self.display.draw_text("m", (x, y), color)
+        def draw_pixel_if_on_display(px: int, py: int, rgb: tuple[int, int, int]):
+            if 0 <= px < 64 and 0 <= py < 64:
+                self.display.draw_pixel((px, py), rgb)
 
-        slash_pixels = (
-            (2, 1),
-            (1, 2),
-            (1, 3),
-            (0, 4),
-        )
-        for dx, dy in slash_pixels:
-            self.display.draw_pixel((x + 4 + dx, y + dy), color)
+        for idx, char in enumerate(text):
+            if char not in ("f", "/", "o", "O", "D", "u", "U"):
+                continue
 
-        self.display.draw_text("t", (x + 8, y), color)
-        self.draw_custom_f_glyph((x + 12, y), color)
-        self.display.draw_text("ts", (x + 16, y), color)
+            glyph_x = x + (idx * 4)
+
+            # Clear glyph cell before drawing custom pixels.
+            for dy in range(5):
+                for dx in range(3):
+                    draw_pixel_if_on_display(glyph_x + dx, y + dy, (0, 0, 0))
+
+            if char == "f":
+                glyph_pixels = (
+                    (0, 1), (1, 1), (2, 1),
+                    (0, 2),
+                    (0, 3), (1, 3),
+                    (0, 4),
+                )
+            elif char == "/":
+                glyph_pixels = (
+                    (2, 1),
+                    (1, 2),
+                    (1, 3),
+                    (0, 4),
+                )
+            elif char == "o":
+                glyph_pixels = (
+                    (0, 1), (1, 1), (2, 1),
+                    (0, 2), (2, 2),
+                    (0, 3), (2, 3),
+                    (0, 4), (1, 4), (2, 4),
+                )
+            elif char == "D":
+                glyph_pixels = (
+                    (0, 0), (1, 0),
+                    (0, 1), (2, 1),
+                    (0, 2), (2, 2),
+                    (0, 3), (2, 3),
+                    (0, 4), (1, 4),
+                )
+            elif char == "u":
+                glyph_pixels = (
+                    (0, 1), (2, 1),
+                    (0, 2), (2, 2),
+                    (0, 3), (2, 3),
+                    (0, 4), (1, 4), (2, 4),
+                )
+            elif char == "U":
+                glyph_pixels = (
+                    (0, 0), (2, 0),
+                    (0, 1), (2, 1),
+                    (0, 2), (2, 2),
+                    (0, 3), (2, 3),
+                    (0, 4), (1, 4), (2, 4),
+                )
+            else:  # 'O'
+                glyph_pixels = (
+                    (0, 0), (1, 0), (2, 0),
+                    (0, 1), (2, 1),
+                    (0, 2), (2, 2),
+                    (0, 3), (2, 3),
+                    (0, 4), (1, 4), (2, 4),
+                )
+
+            for dx, dy in glyph_pixels:
+                draw_pixel_if_on_display(glyph_x + dx, y + dy, color)
 
     def animate_train_band(
             self,
@@ -170,6 +212,41 @@ class Display():
             self.display.push()
             time.sleep(off_seconds)
 
+    def blink_and_animate_arrival(
+            self,
+            color: tuple[int, int, int],
+            location: tuple[int, int],
+            fps: int = 25,
+            loops: int = 1,
+    ):
+        sprite_path_by_color = {
+            TextColor.RED.value: "red_line.png",
+            TextColor.ORANGE.value: "orange_line.png",
+            TextColor.GREEN.value: "green_line.png",
+            TextColor.BLUE.value: "blue_line.png",
+        }
+
+        sprite_path = sprite_path_by_color.get(color)
+        if not sprite_path:
+            return
+
+        self.blink_exclamation(color, location=location)
+
+        if location == self.BOTTOM_RIGHT_ALERT_LOCATION:
+            y = 41
+            direction = AnimationDirection.RIGHT_TO_LEFT
+        else:
+            y = 17
+            direction = AnimationDirection.LEFT_TO_RIGHT
+
+        self.animate_train_band(
+            sprite_path,
+            y=y,
+            fps=fps,
+            loops=loops,
+            direction=direction,
+        )
+
     def display_train_statuses(
             self,
             b_min_to_nct_1: int,
@@ -197,9 +274,9 @@ class Display():
     ):
         self.black_screen()
 
-        self.display.draw_text("union", (0, -1), TextColor.GREEN.value)
-        self.draw_custom_mtfts_label((23, -1), TextColor.GREEN.value)
-        self.display.draw_text("won", (51, -1), TextColor.BLUE.value)
+        self.draw_station_label("union", (0, -1), TextColor.GREEN.value)
+        self.draw_station_label("m/tfts", (23, -1), TextColor.GREEN.value)
+        self.draw_station_label("won", (51, -1), TextColor.BLUE.value)
 
         self.display.draw_text(f"{north_d_min_to_nct_1 or ''}", (6, 5), TextColor.GREEN.value)
         self.display.draw_text(f"{north_e_min_to_nct_1 or ''}", (30, 5), TextColor.GREEN.value)
@@ -209,10 +286,10 @@ class Display():
         self.display.draw_text(f"{north_e_min_to_nct_2 or ''}", (30, 11), TextColor.GREEN.value)
         self.display.draw_text(f"{won_min_to_nct_2 or ''}", (53, 11), TextColor.BLUE.value)
 
-        self.display.draw_text("B", (6, 23), TextColor.GREEN.value)
-        self.display.draw_text("C", (22, 23), TextColor.GREEN.value)
-        self.display.draw_text("ALE", (34, 23), TextColor.RED.value)
-        self.display.draw_text("OAK", (50, 23), TextColor.ORANGE.value)
+        self.draw_station_label("B", (6, 23), TextColor.GREEN.value)
+        self.draw_station_label("C", (22, 23), TextColor.GREEN.value)
+        self.draw_station_label("ALE", (34, 23), TextColor.RED.value)
+        self.draw_station_label("OAK", (50, 23), TextColor.ORANGE.value)
 
         self.display.draw_text(f"{b_min_to_nct_1 or ''}", (4, 29), TextColor.GREEN.value)
         self.display.draw_text(f"{c_min_to_nct_1 or ''}", (20, 29), TextColor.GREEN.value)
@@ -224,10 +301,10 @@ class Display():
         self.display.draw_text(f"{alewife_min_to_nct_2 or ''}", (36, 35), TextColor.RED.value)
         self.display.draw_text(f"{ol_n_min_to_nct_2 or ''}", (52, 35), TextColor.ORANGE.value)
 
-        self.display.draw_text("D", (6, 47), TextColor.GREEN.value)
-        self.display.draw_text("E", (22, 47), TextColor.GREEN.value)
-        self.display.draw_text("ASH", (34, 47), TextColor.RED.value)
-        self.display.draw_text("FOR", (50, 47), TextColor.ORANGE.value)
+        self.draw_station_label("D", (6, 47), TextColor.GREEN.value)
+        self.draw_station_label("E", (22, 47), TextColor.GREEN.value)
+        self.draw_station_label("ASH", (34, 47), TextColor.RED.value)
+        self.draw_station_label("FOR", (50, 47), TextColor.ORANGE.value)
 
         self.display.draw_text(f"{d_min_to_nct_1 or ''}", (4, 53), TextColor.GREEN.value)
         self.display.draw_text(f"{e_min_to_nct_1 or ''}", (20, 53), TextColor.GREEN.value)
@@ -238,20 +315,5 @@ class Display():
         self.display.draw_text(f"{e_min_to_nct_2 or ''}", (20, 59), TextColor.GREEN.value)
         self.display.draw_text(f"{ashmont_braintree_min_to_nct_2 or ''}", (36, 59), TextColor.RED.value)
         self.display.draw_text(f"{ol_s_min_to_nct_2 or ''}", (52, 59), TextColor.ORANGE.value)
-
-        self.animate_train_band(
-            "red_line.png",
-            y=17,
-            fps=25,
-            loops=1,
-            direction=AnimationDirection.RIGHT_TO_LEFT,
-        )
-        self.animate_train_band(
-            "green_line.png",
-            y=41,
-            fps=25,
-            loops=1,
-            direction=AnimationDirection.LEFT_TO_RIGHT,
-        )
 
         self.display.push()
