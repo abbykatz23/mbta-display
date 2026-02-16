@@ -47,3 +47,8 @@ class TextColor(Enum):
     ORANGE = (237, 139, 0)
     GREEN = (0, 132, 61)
     BLUE = (0, 61, 165)
+
+
+class AnimationDirection(StrEnum):
+    LEFT_TO_RIGHT = "left_to_right"
+    RIGHT_TO_LEFT = "right_to_left"
