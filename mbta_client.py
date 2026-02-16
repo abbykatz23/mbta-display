@@ -22,11 +22,11 @@ class MBTAClient:
     MBTA_BASE_URL = "https://api-v3.mbta.com"
     PREDICTIONS_URL = urljoin(MBTA_BASE_URL, "/predictions")
 
-    def _get_prediction(self, station_id: StationID, limit=10):
+    def _get_prediction(self, station_id: StationID, limit=10, sort_field: str = "arrival_time"):
         params = {
             "filter[stop]": station_id.value,
             "page[limit]": limit,
-            "sort": "arrival_time",
+            "sort": sort_field,
         }
         headers = get_headers()
         res = requests.get(
@@ -42,7 +42,10 @@ class MBTAClient:
         now: datetime,
         min_to_walk_to_station: int,  # todo: put walking time to station elsewhere?
     ) -> Tuple[bool, Optional[int], Optional[int]]:
-        predictions: PredictionResponse = self._get_prediction(station_id)
+        predictions: PredictionResponse = self._get_prediction(
+            station_id,
+            sort_field="departure_time",
+        )
 
         train_currently_arriving: bool = False
         mins_until_next_catchable_train: Optional[int] = None
