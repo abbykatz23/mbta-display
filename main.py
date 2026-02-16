@@ -13,7 +13,7 @@ ARRIVAL_ANIMATION_COOLDOWN_MINUTES = 3
 
 
 async def poll_loop(mbta_client: MBTAClient, display: Display):
-    last_animation_at_by_line: dict[str, datetime] = {}
+    last_animation_at_by_station: dict[StationID, datetime] = {}
 
     while True:
         try:
@@ -112,7 +112,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
 
             alert_color = None
             alert_location = None
-            alert_line_key = None
+            alert_station_key = None
 
             if (
                 ashmont_braintree_currently_arriving
@@ -125,20 +125,20 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 alert_location = display.BOTTOM_RIGHT_ALERT_LOCATION
                 if ashmont_braintree_currently_arriving:
                     alert_color = TextColor.RED.value
-                    alert_line_key = "red"
+                    alert_station_key = StationID.CHARLES_MGH_ASHMONT_BRAINTREE
                 elif ol_s_currently_arriving:
                     alert_color = TextColor.ORANGE.value
-                    alert_line_key = "orange"
+                    alert_station_key = StationID.DTC_OL_FOREST_HILLS
                 else:
                     alert_color = TextColor.GREEN.value
                     if b_currently_arriving:
-                        alert_line_key = "green_b"
+                        alert_station_key = StationID.PARK_STREET_B
                     elif c_currently_arriving:
-                        alert_line_key = "green_c"
+                        alert_station_key = StationID.PARK_STREET_C
                     elif d_currently_arriving:
-                        alert_line_key = "green_d"
+                        alert_station_key = StationID.PARK_STREET_D
                     elif e_currently_arriving:
-                        alert_line_key = "green_e"
+                        alert_station_key = StationID.PARK_STREET_E
             elif (
                 alewife_currently_arriving
                 or won_currently_arriving
@@ -149,19 +149,19 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 alert_location = display.TOP_LEFT_ALERT_LOCATION
                 if alewife_currently_arriving:
                     alert_color = TextColor.RED.value
-                    alert_line_key = "red"
+                    alert_station_key = StationID.CHARLES_MGH_ALEWIFE
                 elif ol_n_currently_arriving:
                     alert_color = TextColor.ORANGE.value
-                    alert_line_key = "orange"
+                    alert_station_key = StationID.DTC_OL_OAK_GROVE
                 elif won_currently_arriving:
                     alert_color = TextColor.BLUE.value
-                    alert_line_key = "blue"
+                    alert_station_key = StationID.BOWDOIN_WONDERLAND
                 else:
                     alert_color = TextColor.GREEN.value
                     if north_d_currently_arriving:
-                        alert_line_key = "green_d"
+                        alert_station_key = StationID.PARK_STREET_NORTH
                     elif north_e_currently_arriving:
-                        alert_line_key = "green_e"
+                        alert_station_key = StationID.PARK_STREET_NORTH
 
             display.display_train_statuses(
                 b_min_to_nct_1,
@@ -192,15 +192,15 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
             if (
                 alert_color
                 and alert_location
-                and alert_line_key
+                and alert_station_key
             ):
-                last_animation_at = last_animation_at_by_line.get(alert_line_key)
+                last_animation_at = last_animation_at_by_station.get(alert_station_key)
                 if (
                     last_animation_at is None
                     or now - last_animation_at > timedelta(minutes=ARRIVAL_ANIMATION_COOLDOWN_MINUTES)
                 ):
                     display.blink_and_animate_arrival(alert_color, location=alert_location)
-                    last_animation_at_by_line[alert_line_key] = now
+                    last_animation_at_by_station[alert_station_key] = now
 
             await asyncio.sleep(INTERVAL_SECONDS)
         except asyncio.CancelledError:
