@@ -9,8 +9,8 @@ PIXOO_IP = settings.pixoo_ip_address
 
 
 class Display():
-    TOP_LEFT_ALERT_LOCATION = (2, 17)
-    BOTTOM_RIGHT_ALERT_LOCATION = (61, 39)
+    TOP_LEFT_ALERT_LOCATION = (1, 17)
+    BOTTOM_RIGHT_ALERT_LOCATION = (61, 41)
 
     def __init__(self):
         self.display = Pixoo(PIXOO_IP)

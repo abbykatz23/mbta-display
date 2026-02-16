@@ -1,7 +1,6 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.tz import tzoffset
-from typing import Optional
 
 from mbta_client import MBTAClient
 from enums import StationID, RouteID, TextColor
@@ -10,9 +9,12 @@ from settings import COMMUTE_TIMES
 
 INTERVAL_SECONDS = 20
 EST = tzoffset(None, -18000)
+ARRIVAL_ANIMATION_COOLDOWN_MINUTES = 3
 
 
 async def poll_loop(mbta_client: MBTAClient, display: Display):
+    last_animation_at_by_line: dict[str, datetime] = {}
+
     while True:
         try:
             now = datetime.now(EST)
@@ -110,6 +112,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
 
             alert_color = None
             alert_location = None
+            alert_line_key = None
 
             if (
                 ashmont_braintree_currently_arriving
@@ -119,13 +122,23 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 or d_currently_arriving
                 or e_currently_arriving
             ):
-                alert_location = (61, 39)
+                alert_location = display.BOTTOM_RIGHT_ALERT_LOCATION
                 if ashmont_braintree_currently_arriving:
                     alert_color = TextColor.RED.value
+                    alert_line_key = "red"
                 elif ol_s_currently_arriving:
                     alert_color = TextColor.ORANGE.value
+                    alert_line_key = "orange"
                 else:
                     alert_color = TextColor.GREEN.value
+                    if b_currently_arriving:
+                        alert_line_key = "green_b"
+                    elif c_currently_arriving:
+                        alert_line_key = "green_c"
+                    elif d_currently_arriving:
+                        alert_line_key = "green_d"
+                    elif e_currently_arriving:
+                        alert_line_key = "green_e"
             elif (
                 alewife_currently_arriving
                 or won_currently_arriving
@@ -133,15 +146,22 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 or north_d_currently_arriving
                 or north_e_currently_arriving
             ):
-                alert_location = (2, 17)
+                alert_location = display.TOP_LEFT_ALERT_LOCATION
                 if alewife_currently_arriving:
                     alert_color = TextColor.RED.value
+                    alert_line_key = "red"
                 elif ol_n_currently_arriving:
                     alert_color = TextColor.ORANGE.value
+                    alert_line_key = "orange"
                 elif won_currently_arriving:
                     alert_color = TextColor.BLUE.value
+                    alert_line_key = "blue"
                 else:
                     alert_color = TextColor.GREEN.value
+                    if north_d_currently_arriving:
+                        alert_line_key = "green_d"
+                    elif north_e_currently_arriving:
+                        alert_line_key = "green_e"
 
             display.display_train_statuses(
                 b_min_to_nct_1,
@@ -169,8 +189,18 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
             )
 
 
-            if alert_color and alert_location:
-                display.blink_and_animate_arrival(alert_color, location=alert_location)
+            if (
+                alert_color
+                and alert_location
+                and alert_line_key
+            ):
+                last_animation_at = last_animation_at_by_line.get(alert_line_key)
+                if (
+                    last_animation_at is None
+                    or now - last_animation_at > timedelta(minutes=ARRIVAL_ANIMATION_COOLDOWN_MINUTES)
+                ):
+                    display.blink_and_animate_arrival(alert_color, location=alert_location)
+                    last_animation_at_by_line[alert_line_key] = now
 
             await asyncio.sleep(INTERVAL_SECONDS)
         except asyncio.CancelledError:
