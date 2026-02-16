@@ -16,9 +16,11 @@ class Display():
 
     def __init__(self):
         self.display = Pixoo(PIXOO_IP)
+        self.static_layout_drawn = False
 
     def black_screen(self):
         self.display.fill_rgb(0,0,0)
+        self.static_layout_drawn = False
 
     def draw_layout_background(self):
         # Dark tinted zone colors.
@@ -59,6 +61,59 @@ class Display():
 
     def push_screen(self):
         self.display.push()
+
+    def _scaled_color(self, color: tuple[int, int, int], factor: float) -> tuple[int, int, int]:
+        return tuple(int(channel * factor) for channel in color)
+
+    def _layout_color_at(self, x: int, y: int) -> tuple[int, int, int]:
+        dark_green = self._scaled_color(TextColor.GREEN.value, self.BODY_BG_FACTOR)
+        dark_red = self._scaled_color(TextColor.RED.value, self.BODY_BG_FACTOR)
+        dark_orange = self._scaled_color(TextColor.ORANGE.value, self.BODY_BG_FACTOR)
+        dark_blue = self._scaled_color(TextColor.BLUE.value, self.BODY_BG_FACTOR)
+        light_green = self._scaled_color(TextColor.GREEN.value, self.HEADER_BG_FACTOR)
+        light_red = self._scaled_color(TextColor.RED.value, self.HEADER_BG_FACTOR)
+        light_orange = self._scaled_color(TextColor.ORANGE.value, self.HEADER_BG_FACTOR)
+        light_blue = self._scaled_color(TextColor.BLUE.value, self.HEADER_BG_FACTOR)
+
+        # Train lanes are always black.
+        if 17 <= y <= 21 or 41 <= y <= 45:
+            return (0, 0, 0)
+
+        # Header bands.
+        if 0 <= y <= 4:
+            return light_blue if x >= 49 else light_green
+        if 22 <= y <= 28 or 46 <= y <= 52:
+            if x <= 31:
+                return light_green
+            if x <= 47:
+                return light_red
+            return light_orange
+
+        # Body zones.
+        if 0 <= y <= 16:
+            return dark_blue if x >= 49 else dark_green
+        if 22 <= y <= 63:
+            if x <= 31:
+                return dark_green
+            if x <= 47:
+                return dark_red
+            return dark_orange
+
+        return (0, 0, 0)
+
+    def _clear_dynamic_text_cell(self, location: tuple[int, int], max_chars: int = 3):
+        x, y = location
+        bg = self._layout_color_at(x, y)
+        width = max(1, (max_chars * 4) - 1)
+        self.display.draw_filled_rectangle(
+            (x, y),
+            (min(63, x + width - 1), min(63, y + 4)),
+            bg,
+        )
+
+    def _draw_dynamic_value(self, value: int | None, location: tuple[int, int], color: tuple[int, int, int]):
+        self._clear_dynamic_text_cell(location)
+        self.display.draw_text(f"{value or ''}", location, color)
 
     def sample_text(self):
         self.display.send_text(
@@ -184,6 +239,26 @@ class Display():
         bg = tuple(max(0, min(255, int(channel * self.HEADER_BG_FACTOR))) for channel in color)
         self.display.draw_filled_rectangle((x, top), (right, bottom), bg)
         self.draw_station_label(text, location, color, glyph_clear_color=bg)
+
+    def draw_static_layout(self):
+        self.draw_layout_background()
+
+        self.draw_station_header("union", (0, -1), TextColor.GREEN.value)
+        self.draw_station_header("m/tfts", (23, -1), TextColor.GREEN.value)
+        self.draw_station_header("won", (51, -1), TextColor.BLUE.value)
+
+        self.draw_station_header("B", (6, 23), TextColor.GREEN.value)
+        self.draw_station_header("C", (22, 23), TextColor.GREEN.value)
+        self.draw_station_header("ALE", (34, 23), TextColor.RED.value)
+        self.draw_station_header("OAK", (50, 23), TextColor.ORANGE.value)
+
+        self.draw_station_header("D", (6, 47), TextColor.GREEN.value)
+        self.draw_station_header("E", (22, 47), TextColor.GREEN.value)
+        self.draw_station_header("ASH", (34, 47), TextColor.RED.value)
+        self.draw_station_header("FOR", (50, 47), TextColor.ORANGE.value)
+
+        self.push_screen()
+        self.static_layout_drawn = True
 
     def animate_train_band(
             self,
@@ -330,48 +405,35 @@ class Display():
             ol_s_min_to_nct_1: int,
             ol_s_min_to_nct_2: int
     ):
-        self.draw_layout_background()
+        if not self.static_layout_drawn:
+            self.draw_static_layout()
 
-        self.draw_station_header("union", (0, -1), TextColor.GREEN.value)
-        self.draw_station_header("m/tfts", (23, -1), TextColor.GREEN.value)
-        self.draw_station_header("won", (51, -1), TextColor.BLUE.value)
+        self._draw_dynamic_value(north_d_min_to_nct_1, (6, 5), TextColor.GREEN.value)
+        self._draw_dynamic_value(north_e_min_to_nct_1, (30, 5), TextColor.GREEN.value)
+        self._draw_dynamic_value(won_min_to_nct_1, (53, 5), TextColor.BLUE.value)
 
-        self.display.draw_text(f"{north_d_min_to_nct_1 or ''}", (6, 5), TextColor.GREEN.value)
-        self.display.draw_text(f"{north_e_min_to_nct_1 or ''}", (30, 5), TextColor.GREEN.value)
-        self.display.draw_text(f"{won_min_to_nct_1 or ''}", (53, 5), TextColor.BLUE.value)
+        self._draw_dynamic_value(north_d_min_to_nct_2, (6, 11), TextColor.GREEN.value)
+        self._draw_dynamic_value(north_e_min_to_nct_2, (30, 11), TextColor.GREEN.value)
+        self._draw_dynamic_value(won_min_to_nct_2, (53, 11), TextColor.BLUE.value)
 
-        self.display.draw_text(f"{north_d_min_to_nct_2 or ''}", (6, 11), TextColor.GREEN.value)
-        self.display.draw_text(f"{north_e_min_to_nct_2 or ''}", (30, 11), TextColor.GREEN.value)
-        self.display.draw_text(f"{won_min_to_nct_2 or ''}", (53, 11), TextColor.BLUE.value)
+        self._draw_dynamic_value(b_min_to_nct_1, (4, 29), TextColor.GREEN.value)
+        self._draw_dynamic_value(c_min_to_nct_1, (20, 29), TextColor.GREEN.value)
+        self._draw_dynamic_value(alewife_min_to_nct_1, (36, 29), TextColor.RED.value)
+        self._draw_dynamic_value(ol_n_min_to_nct_1, (52, 29), TextColor.ORANGE.value)
 
-        self.draw_station_header("B", (6, 23), TextColor.GREEN.value)
-        self.draw_station_header("C", (22, 23), TextColor.GREEN.value)
-        self.draw_station_header("ALE", (34, 23), TextColor.RED.value)
-        self.draw_station_header("OAK", (50, 23), TextColor.ORANGE.value)
+        self._draw_dynamic_value(b_min_to_nct_2, (4, 35), TextColor.GREEN.value)
+        self._draw_dynamic_value(c_min_to_nct_2, (20, 35), TextColor.GREEN.value)
+        self._draw_dynamic_value(alewife_min_to_nct_2, (36, 35), TextColor.RED.value)
+        self._draw_dynamic_value(ol_n_min_to_nct_2, (52, 35), TextColor.ORANGE.value)
 
-        self.display.draw_text(f"{b_min_to_nct_1 or ''}", (4, 29), TextColor.GREEN.value)
-        self.display.draw_text(f"{c_min_to_nct_1 or ''}", (20, 29), TextColor.GREEN.value)
-        self.display.draw_text(f"{alewife_min_to_nct_1 or ''}", (36, 29), TextColor.RED.value)
-        self.display.draw_text(f"{ol_n_min_to_nct_1 or ''}", (52, 29), TextColor.ORANGE.value)
+        self._draw_dynamic_value(d_min_to_nct_1, (4, 53), TextColor.GREEN.value)
+        self._draw_dynamic_value(e_min_to_nct_1, (20, 53), TextColor.GREEN.value)
+        self._draw_dynamic_value(ashmont_braintree_min_to_nct_1, (36, 53), TextColor.RED.value)
+        self._draw_dynamic_value(ol_s_min_to_nct_1, (52, 53), TextColor.ORANGE.value)
 
-        self.display.draw_text(f"{b_min_to_nct_2 or ''}", (4, 35), TextColor.GREEN.value)
-        self.display.draw_text(f"{c_min_to_nct_2 or ''}", (20, 35), TextColor.GREEN.value)
-        self.display.draw_text(f"{alewife_min_to_nct_2 or ''}", (36, 35), TextColor.RED.value)
-        self.display.draw_text(f"{ol_n_min_to_nct_2 or ''}", (52, 35), TextColor.ORANGE.value)
-
-        self.draw_station_header("D", (6, 47), TextColor.GREEN.value)
-        self.draw_station_header("E", (22, 47), TextColor.GREEN.value)
-        self.draw_station_header("ASH", (34, 47), TextColor.RED.value)
-        self.draw_station_header("FOR", (50, 47), TextColor.ORANGE.value)
-
-        self.display.draw_text(f"{d_min_to_nct_1 or ''}", (4, 53), TextColor.GREEN.value)
-        self.display.draw_text(f"{e_min_to_nct_1 or ''}", (20, 53), TextColor.GREEN.value)
-        self.display.draw_text(f"{ashmont_braintree_min_to_nct_1 or ''}", (36, 53), TextColor.RED.value)
-        self.display.draw_text(f"{ol_s_min_to_nct_1 or ''}", (52, 53), TextColor.ORANGE.value)
-
-        self.display.draw_text(f"{d_min_to_nct_2 or ''}", (4, 59), TextColor.GREEN.value)
-        self.display.draw_text(f"{e_min_to_nct_2 or ''}", (20, 59), TextColor.GREEN.value)
-        self.display.draw_text(f"{ashmont_braintree_min_to_nct_2 or ''}", (36, 59), TextColor.RED.value)
-        self.display.draw_text(f"{ol_s_min_to_nct_2 or ''}", (52, 59), TextColor.ORANGE.value)
+        self._draw_dynamic_value(d_min_to_nct_2, (4, 59), TextColor.GREEN.value)
+        self._draw_dynamic_value(e_min_to_nct_2, (20, 59), TextColor.GREEN.value)
+        self._draw_dynamic_value(ashmont_braintree_min_to_nct_2, (36, 59), TextColor.RED.value)
+        self._draw_dynamic_value(ol_s_min_to_nct_2, (52, 59), TextColor.ORANGE.value)
 
         self.display.push()
