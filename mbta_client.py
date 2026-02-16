@@ -14,7 +14,6 @@ def get_headers(headers: Optional[Dict[str, Any]] = None):
 
 
 def train_is_arriving(now, train_arrival_time):
-    # todo: will need to figure out how to make sure a given arrival is only signaled one time -> use train ID or something?
     time_delta_until_train = train_arrival_time - now
     return abs(int(time_delta_until_train.total_seconds())) <= 60
 
@@ -45,9 +44,7 @@ class MBTAClient:
     ) -> Tuple[bool, Optional[int], Optional[int]]:
         predictions: PredictionResponse = self._get_prediction(station_id)
 
-        train_currently_arriving: bool = (
-            False  # todo: improve naming? train_currently_arriving and train_is_arriving -> not great
-        )
+        train_currently_arriving: bool = False
         mins_until_next_catchable_train: Optional[int] = None
         mins_until_second_next_catchable_train: Optional[int] = None
 
@@ -93,9 +90,7 @@ class MBTAClient:
             station_id, 30 if route_id else 10
         )
 
-        train_currently_arriving: bool = (
-            False  # todo: improve naming? train_currently_arriving and train_is_arriving -> not great
-        )
+        train_currently_arriving: bool = False
         mins_until_next_catchable_train: Optional[int] = None
         mins_until_second_next_catchable_train: Optional[int] = None
 
