@@ -110,10 +110,8 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 StationID.DTC_OL_FOREST_HILLS, now, COMMUTE_TIMES[StationID.DTC_OL_FOREST_HILLS]
             )
 
-            alert_color = None
-            alert_location = None
-            alert_station_key = None
-
+            bottom_right_alert_color = None
+            bottom_right_alert_station_key = None
             if (
                 ashmont_braintree_currently_arriving
                 or ol_s_currently_arriving
@@ -122,46 +120,47 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 or d_currently_arriving
                 or e_currently_arriving
             ):
-                alert_location = display.BOTTOM_RIGHT_ALERT_LOCATION
                 if ashmont_braintree_currently_arriving:
-                    alert_color = TextColor.RED.value
-                    alert_station_key = StationID.CHARLES_MGH_ASHMONT_BRAINTREE
+                    bottom_right_alert_color = TextColor.RED.value
+                    bottom_right_alert_station_key = StationID.CHARLES_MGH_ASHMONT_BRAINTREE
                 elif ol_s_currently_arriving:
-                    alert_color = TextColor.ORANGE.value
-                    alert_station_key = StationID.DTC_OL_FOREST_HILLS
+                    bottom_right_alert_color = TextColor.ORANGE.value
+                    bottom_right_alert_station_key = StationID.DTC_OL_FOREST_HILLS
                 else:
-                    alert_color = TextColor.GREEN.value
+                    bottom_right_alert_color = TextColor.GREEN.value
                     if b_currently_arriving:
-                        alert_station_key = StationID.PARK_STREET_B
+                        bottom_right_alert_station_key = StationID.PARK_STREET_B
                     elif c_currently_arriving:
-                        alert_station_key = StationID.PARK_STREET_C
+                        bottom_right_alert_station_key = StationID.PARK_STREET_C
                     elif d_currently_arriving:
-                        alert_station_key = StationID.PARK_STREET_D
+                        bottom_right_alert_station_key = StationID.PARK_STREET_D
                     elif e_currently_arriving:
-                        alert_station_key = StationID.PARK_STREET_E
-            elif (
+                        bottom_right_alert_station_key = StationID.PARK_STREET_E
+
+            top_left_alert_color = None
+            top_left_alert_station_key = None
+            if (
                 alewife_currently_arriving
                 or won_currently_arriving
                 or ol_n_currently_arriving
                 or north_d_currently_arriving
                 or north_e_currently_arriving
             ):
-                alert_location = display.TOP_LEFT_ALERT_LOCATION
                 if alewife_currently_arriving:
-                    alert_color = TextColor.RED.value
-                    alert_station_key = StationID.CHARLES_MGH_ALEWIFE
+                    top_left_alert_color = TextColor.RED.value
+                    top_left_alert_station_key = StationID.CHARLES_MGH_ALEWIFE
                 elif ol_n_currently_arriving:
-                    alert_color = TextColor.ORANGE.value
-                    alert_station_key = StationID.DTC_OL_OAK_GROVE
+                    top_left_alert_color = TextColor.ORANGE.value
+                    top_left_alert_station_key = StationID.DTC_OL_OAK_GROVE
                 elif won_currently_arriving:
-                    alert_color = TextColor.BLUE.value
-                    alert_station_key = StationID.BOWDOIN_WONDERLAND
+                    top_left_alert_color = TextColor.BLUE.value
+                    top_left_alert_station_key = StationID.BOWDOIN_WONDERLAND
                 else:
-                    alert_color = TextColor.GREEN.value
+                    top_left_alert_color = TextColor.GREEN.value
                     if north_d_currently_arriving:
-                        alert_station_key = StationID.PARK_STREET_NORTH
+                        top_left_alert_station_key = StationID.PARK_STREET_NORTH
                     elif north_e_currently_arriving:
-                        alert_station_key = StationID.PARK_STREET_NORTH
+                        top_left_alert_station_key = StationID.PARK_STREET_NORTH
 
             display.display_train_statuses(
                 b_min_to_nct_1,
@@ -188,19 +187,32 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 ol_s_min_to_nct_2
             )
 
+            arrivals_to_animate: list[tuple[tuple[int, int, int], tuple[int, int]]] = []
 
-            if (
-                alert_color
-                and alert_location
-                and alert_station_key
-            ):
-                last_animation_at = last_animation_at_by_station.get(alert_station_key)
+            if bottom_right_alert_color and bottom_right_alert_station_key:
+                last_animation_at = last_animation_at_by_station.get(bottom_right_alert_station_key)
                 if (
                     last_animation_at is None
                     or now - last_animation_at > timedelta(minutes=ARRIVAL_ANIMATION_COOLDOWN_MINUTES)
                 ):
-                    display.blink_and_animate_arrival(alert_color, location=alert_location)
-                    last_animation_at_by_station[alert_station_key] = now
+                    arrivals_to_animate.append(
+                        (bottom_right_alert_color, display.BOTTOM_RIGHT_ALERT_LOCATION)
+                    )
+                    last_animation_at_by_station[bottom_right_alert_station_key] = now
+
+            if top_left_alert_color and top_left_alert_station_key:
+                last_animation_at = last_animation_at_by_station.get(top_left_alert_station_key)
+                if (
+                    last_animation_at is None
+                    or now - last_animation_at > timedelta(minutes=ARRIVAL_ANIMATION_COOLDOWN_MINUTES)
+                ):
+                    arrivals_to_animate.append(
+                        (top_left_alert_color, display.TOP_LEFT_ALERT_LOCATION)
+                    )
+                    last_animation_at_by_station[top_left_alert_station_key] = now
+
+            if arrivals_to_animate:
+                display.blink_and_animate_arrivals(arrivals_to_animate)
 
             await asyncio.sleep(INTERVAL_SECONDS)
         except asyncio.CancelledError:
