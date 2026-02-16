@@ -31,6 +31,60 @@ class Display():
     def custom_text_payload(self, payload: dict):
         self.display.send_text(**payload)
 
+    def draw_custom_f_glyph(self, location: tuple[int, int], color: tuple[int, int, int]):
+        """
+        Draw a custom lowercase f shape:
+        XXX
+        X
+        XX
+        X
+        """
+        x, y = location
+        f_pixels = (
+            (0, 1), (1, 1), (2, 1),
+            (0, 2),
+            (0, 3), (1, 3),
+            (0, 4),
+        )
+        for dx, dy in f_pixels:
+            self.display.draw_pixel((x + dx, y + dy), color)
+
+    def draw_custom_for_label(self, location: tuple[int, int], color: tuple[int, int, int]):
+        """Draw "for" with the custom lowercase f shape."""
+        x, y = location
+
+        self.draw_custom_f_glyph((x, y), color)
+
+        # Draw the rest of the label with the default font.
+        self.display.draw_text("or", (x + 4, y), color)
+
+    def draw_custom_mtfts_label(self, location: tuple[int, int], color: tuple[int, int, int]):
+        """
+        Draw "m/tfts" with custom slash and lowercase f shapes.
+
+        Slash shape:
+          X
+         X
+         X
+        X
+        """
+        x, y = location
+
+        self.display.draw_text("m", (x, y), color)
+
+        slash_pixels = (
+            (2, 1),
+            (1, 2),
+            (1, 3),
+            (0, 4),
+        )
+        for dx, dy in slash_pixels:
+            self.display.draw_pixel((x + 4 + dx, y + dy), color)
+
+        self.display.draw_text("t", (x + 8, y), color)
+        self.draw_custom_f_glyph((x + 12, y), color)
+        self.display.draw_text("ts", (x + 16, y), color)
+
     def animate_train_band(
             self,
             sprite_path: str,
@@ -143,37 +197,37 @@ class Display():
     ):
         self.black_screen()
 
-        self.display.draw_text("Union", (0, 0), TextColor.GREEN.value)
-        self.display.draw_text("M/Tfts", (23, 0), TextColor.GREEN.value)
-        self.display.draw_text("Won", (51, 0), TextColor.BLUE.value)
+        self.display.draw_text("union", (0, -1), TextColor.GREEN.value)
+        self.draw_custom_mtfts_label((23, -1), TextColor.GREEN.value)
+        self.display.draw_text("won", (51, -1), TextColor.BLUE.value)
 
-        self.display.draw_text(f"{north_d_min_to_nct_1 or ''}", (6, 6), TextColor.GREEN.value)
-        self.display.draw_text(f"{north_e_min_to_nct_1 or ''}", (30, 6), TextColor.GREEN.value)
-        self.display.draw_text(f"{won_min_to_nct_1 or ''}", (53, 6), TextColor.BLUE.value)
+        self.display.draw_text(f"{north_d_min_to_nct_1 or ''}", (6, 5), TextColor.GREEN.value)
+        self.display.draw_text(f"{north_e_min_to_nct_1 or ''}", (30, 5), TextColor.GREEN.value)
+        self.display.draw_text(f"{won_min_to_nct_1 or ''}", (53, 5), TextColor.BLUE.value)
 
-        self.display.draw_text(f"{north_d_min_to_nct_2 or ''}", (6, 12), TextColor.GREEN.value)
-        self.display.draw_text(f"{north_e_min_to_nct_2 or ''}", (30, 12), TextColor.GREEN.value)
-        self.display.draw_text(f"{won_min_to_nct_2 or ''}", (53, 12), TextColor.BLUE.value)
+        self.display.draw_text(f"{north_d_min_to_nct_2 or ''}", (6, 11), TextColor.GREEN.value)
+        self.display.draw_text(f"{north_e_min_to_nct_2 or ''}", (30, 11), TextColor.GREEN.value)
+        self.display.draw_text(f"{won_min_to_nct_2 or ''}", (53, 11), TextColor.BLUE.value)
 
-        self.display.draw_text("B", (6, 24), TextColor.GREEN.value)
-        self.display.draw_text("C", (22, 24), TextColor.GREEN.value)
-        self.display.draw_text("Ale", (34, 24), TextColor.RED.value)
-        self.display.draw_text("Oak", (50, 24), TextColor.ORANGE.value)
+        self.display.draw_text("B", (6, 23), TextColor.GREEN.value)
+        self.display.draw_text("C", (22, 23), TextColor.GREEN.value)
+        self.display.draw_text("ALE", (34, 23), TextColor.RED.value)
+        self.display.draw_text("OAK", (50, 23), TextColor.ORANGE.value)
 
-        self.display.draw_text(f"{b_min_to_nct_1 or ''}", (4, 30), TextColor.GREEN.value)
-        self.display.draw_text(f"{c_min_to_nct_1 or ''}", (20, 30), TextColor.GREEN.value)
-        self.display.draw_text(f"{alewife_min_to_nct_1 or ''}", (36, 30), TextColor.RED.value)
-        self.display.draw_text(f"{ol_n_min_to_nct_1 or ''}", (52, 30), TextColor.ORANGE.value)
+        self.display.draw_text(f"{b_min_to_nct_1 or ''}", (4, 29), TextColor.GREEN.value)
+        self.display.draw_text(f"{c_min_to_nct_1 or ''}", (20, 29), TextColor.GREEN.value)
+        self.display.draw_text(f"{alewife_min_to_nct_1 or ''}", (36, 29), TextColor.RED.value)
+        self.display.draw_text(f"{ol_n_min_to_nct_1 or ''}", (52, 29), TextColor.ORANGE.value)
 
-        self.display.draw_text(f"{b_min_to_nct_2 or ''}", (4, 36), TextColor.GREEN.value)
-        self.display.draw_text(f"{c_min_to_nct_2 or ''}", (20, 36), TextColor.GREEN.value)
-        self.display.draw_text(f"{alewife_min_to_nct_2 or ''}", (36, 36), TextColor.RED.value)
-        self.display.draw_text(f"{ol_n_min_to_nct_2 or ''}", (52, 36), TextColor.ORANGE.value)
+        self.display.draw_text(f"{b_min_to_nct_2 or ''}", (4, 35), TextColor.GREEN.value)
+        self.display.draw_text(f"{c_min_to_nct_2 or ''}", (20, 35), TextColor.GREEN.value)
+        self.display.draw_text(f"{alewife_min_to_nct_2 or ''}", (36, 35), TextColor.RED.value)
+        self.display.draw_text(f"{ol_n_min_to_nct_2 or ''}", (52, 35), TextColor.ORANGE.value)
 
-        self.display.draw_text("d", (6, 47), TextColor.GREEN.value)
-        self.display.draw_text("e", (22, 47), TextColor.GREEN.value)
-        self.display.draw_text("ash", (34, 47), TextColor.RED.value)
-        self.display.draw_text("for", (50, 47), TextColor.ORANGE.value)
+        self.display.draw_text("D", (6, 47), TextColor.GREEN.value)
+        self.display.draw_text("E", (22, 47), TextColor.GREEN.value)
+        self.display.draw_text("ASH", (34, 47), TextColor.RED.value)
+        self.display.draw_text("FOR", (50, 47), TextColor.ORANGE.value)
 
         self.display.draw_text(f"{d_min_to_nct_1 or ''}", (4, 53), TextColor.GREEN.value)
         self.display.draw_text(f"{e_min_to_nct_1 or ''}", (20, 53), TextColor.GREEN.value)
@@ -187,14 +241,14 @@ class Display():
 
         self.animate_train_band(
             "red_line.png",
-            y=18,
+            y=17,
             fps=25,
             loops=1,
             direction=AnimationDirection.RIGHT_TO_LEFT,
         )
         self.animate_train_band(
             "green_line.png",
-            y=42,
+            y=41,
             fps=25,
             loops=1,
             direction=AnimationDirection.LEFT_TO_RIGHT,
