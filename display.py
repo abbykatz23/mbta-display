@@ -3,7 +3,7 @@ import time
 from PIL import Image
 
 from settings import settings
-from enums import TextColor
+from enums import TextColor, AnimationDirection
 
 PIXOO_IP = settings.pixoo_ip_address
 
@@ -31,7 +31,14 @@ class Display():
     def custom_text_payload(self, payload: dict):
         self.display.send_text(**payload)
 
-    def animate_train_band(self,sprite_path: str, y: int = 20, fps: int = 12, loops: int = 1):
+    def animate_train_band(
+            self,
+            sprite_path: str,
+            y: int = 20,
+            fps: int = 12,
+            loops: int = 1,
+            direction: AnimationDirection = AnimationDirection.LEFT_TO_RIGHT,
+    ):
         """
         Animate a small sprite (e.g., 26x5) left-to-right across the Pixoo at a fixed y.
         Clears only the affected band each frame for stability.
@@ -75,12 +82,19 @@ class Display():
                     display.draw_pixel((dx, dy), (r, g, b))
 
             self.push_screen()
-        # Move fully off-screen left -> fully off-screen right
-        start_x = -sw
-        end_x = 64
+        if direction == AnimationDirection.LEFT_TO_RIGHT:
+            # Move fully off-screen left -> fully off-screen right
+            x_positions = range(-sw, 65)
+        elif direction == AnimationDirection.RIGHT_TO_LEFT:
+            # Move fully off-screen right -> fully off-screen left
+            x_positions = range(64, -sw - 1, -1)
+        else:
+            raise ValueError(
+                f"Invalid direction '{direction}'. Expected an AnimationDirection enum value."
+            )
 
         for _ in range(loops):
-            for x in range(start_x, end_x + 1):
+            for x in x_positions:
                 draw_sprite_at(x)
                 time.sleep(dt)
 
@@ -156,10 +170,10 @@ class Display():
         self.display.draw_text(f"{alewife_min_to_nct_2 or ''}", (36, 36), TextColor.RED.value)
         self.display.draw_text(f"{ol_n_min_to_nct_2 or ''}", (52, 36), TextColor.ORANGE.value)
 
-        self.display.draw_text("D", (6, 47), TextColor.GREEN.value)
-        self.display.draw_text("E", (22, 47), TextColor.GREEN.value)
-        self.display.draw_text("Ash", (34, 47), TextColor.RED.value)
-        self.display.draw_text("For", (50, 47), TextColor.ORANGE.value)
+        self.display.draw_text("d", (6, 47), TextColor.GREEN.value)
+        self.display.draw_text("e", (22, 47), TextColor.GREEN.value)
+        self.display.draw_text("ash", (34, 47), TextColor.RED.value)
+        self.display.draw_text("for", (50, 47), TextColor.ORANGE.value)
 
         self.display.draw_text(f"{d_min_to_nct_1 or ''}", (4, 53), TextColor.GREEN.value)
         self.display.draw_text(f"{e_min_to_nct_1 or ''}", (20, 53), TextColor.GREEN.value)
@@ -171,7 +185,19 @@ class Display():
         self.display.draw_text(f"{ashmont_braintree_min_to_nct_2 or ''}", (36, 59), TextColor.RED.value)
         self.display.draw_text(f"{ol_s_min_to_nct_2 or ''}", (52, 59), TextColor.ORANGE.value)
 
-        self.animate_train_band("orange_line.png", y=18, fps=25, loops=1)
-        self.animate_train_band("green_line.png", y=42, fps=25, loops=1)
+        self.animate_train_band(
+            "red_line.png",
+            y=18,
+            fps=25,
+            loops=1,
+            direction=AnimationDirection.RIGHT_TO_LEFT,
+        )
+        self.animate_train_band(
+            "green_line.png",
+            y=42,
+            fps=25,
+            loops=1,
+            direction=AnimationDirection.LEFT_TO_RIGHT,
+        )
 
         self.display.push()
