@@ -358,6 +358,21 @@ class Display():
             fps: int = 25,
             loops: int = 1,
     ):
+        self.blink_and_animate_arrivals(
+            arrivals=[(color, location)],
+            fps=fps,
+            loops=loops,
+        )
+
+    def blink_and_animate_arrivals(
+            self,
+            arrivals: list[tuple[tuple[int, int, int], tuple[int, int]]],
+            fps: int = 25,
+            loops: int = 1,
+    ):
+        if not arrivals:
+            return
+
         sprite_path_by_color = {
             TextColor.RED.value: "red_line.png",
             TextColor.ORANGE.value: "orange_line.png",
@@ -365,26 +380,94 @@ class Display():
             TextColor.BLUE.value: "blue_line.png",
         }
 
-        sprite_path = sprite_path_by_color.get(color)
-        if not sprite_path:
+        valid_arrivals: list[dict] = []
+        for color, location in arrivals:
+            sprite_path = sprite_path_by_color.get(color)
+            if not sprite_path:
+                continue
+
+            if location == self.BOTTOM_RIGHT_ALERT_LOCATION:
+                y = 41
+                direction = AnimationDirection.RIGHT_TO_LEFT
+            else:
+                y = 17
+                direction = AnimationDirection.LEFT_TO_RIGHT
+
+            sprite = Image.open(sprite_path).convert("RGBA")
+            sw, sh = sprite.size
+            if sh != 5:
+                raise ValueError(f"Expected sprite height 5px, got {sh}px")
+
+            valid_arrivals.append(
+                {
+                    "color": color,
+                    "location": location,
+                    "sprite": sprite,
+                    "sw": sw,
+                    "sh": sh,
+                    "y": y,
+                    "positions": (
+                        list(range(-sw, 65))
+                        if direction == AnimationDirection.LEFT_TO_RIGHT
+                        else list(range(64, -sw - 1, -1))
+                    ),
+                }
+            )
+
+        if not valid_arrivals:
             return
 
-        self.blink_exclamation(color, location=location)
+        # Blink all alerts together.
+        for _ in range(3):
+            for arrival in valid_arrivals:
+                self.display.draw_text("!", arrival["location"], arrival["color"])
+            self.push_screen()
+            time.sleep(0.2)
 
-        if location == self.BOTTOM_RIGHT_ALERT_LOCATION:
-            y = 41
-            direction = AnimationDirection.RIGHT_TO_LEFT
-        else:
-            y = 17
-            direction = AnimationDirection.LEFT_TO_RIGHT
+            for arrival in valid_arrivals:
+                x, y = arrival["location"]
+                self.display.draw_filled_rectangle((x, y), (x + 2, y + 4), (0, 0, 0))
+            self.push_screen()
+            time.sleep(0.2)
 
-        self.animate_train_band(
-            sprite_path,
-            y=y,
-            fps=fps,
-            loops=loops,
-            direction=direction,
-        )
+        dt = 1 / fps
+        total_frames = max(len(arrival["positions"]) for arrival in valid_arrivals)
+
+        for _ in range(loops):
+            for frame_idx in range(total_frames):
+                # Clear each active train lane once per frame.
+                lanes = {arrival["y"] for arrival in valid_arrivals}
+                for lane_y in lanes:
+                    for yy in range(lane_y, lane_y + 5):
+                        if 0 <= yy < 64:
+                            for xx in range(64):
+                                self.display.draw_pixel((xx, yy), (0, 0, 0))
+
+                # Draw each train at its current frame position.
+                for arrival in valid_arrivals:
+                    if frame_idx >= len(arrival["positions"]):
+                        continue
+                    x0 = arrival["positions"][frame_idx]
+                    sprite = arrival["sprite"]
+                    sw = arrival["sw"]
+                    sh = arrival["sh"]
+                    lane_y = arrival["y"]
+
+                    for sy in range(sh):
+                        dy = lane_y + sy
+                        if dy < 0 or dy >= 64:
+                            continue
+                        for sx in range(sw):
+                            dx = x0 + sx
+                            if dx < 0 or dx >= 64:
+                                continue
+                            r, g, b, a = sprite.getpixel((sx, sy))
+                            if a < 10:
+                                continue
+                            self.display.draw_pixel((dx, dy), (r, g, b))
+
+                self.push_screen()
+                time.sleep(dt)
 
     def display_train_statuses(
             self,
