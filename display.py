@@ -14,6 +14,8 @@ class Display():
     BODY_BG_FACTOR = 0.16
     HEADER_BG_FACTOR = 0.24
     HEADER_GREEN_BLUE_BG_FACTOR = 0.28
+    MAX_DIM_MINUTES = 10
+    MIN_TEXT_BRIGHTNESS_FACTOR = 0.42
 
     def __init__(self):
         self.display = Pixoo(PIXOO_IP)
@@ -115,10 +117,21 @@ class Display():
     def _draw_dynamic_value(self, value: int | None, location: tuple[int, int], color: tuple[int, int, int]):
         self._clear_dynamic_text_cell(location)
         text = "" if value is None else str(value)
+        draw_color = color
+        if value is not None:
+            clamped_minutes = max(0, min(self.MAX_DIM_MINUTES, value))
+            brightness_factor = 1 - (
+                (clamped_minutes / self.MAX_DIM_MINUTES)
+                * (1 - self.MIN_TEXT_BRIGHTNESS_FACTOR)
+            )
+            draw_color = tuple(
+                max(0, min(255, int(channel * brightness_factor)))
+                for channel in color
+            )
         x, y = location
         if len(text) == 1:
             x += 2
-        self.display.draw_text(text, (x, y), color)
+        self.display.draw_text(text, (x, y), draw_color)
 
     def sample_text(self):
         self.display.send_text(
