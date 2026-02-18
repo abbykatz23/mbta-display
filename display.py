@@ -359,7 +359,7 @@ class Display():
             self,
             color: tuple[int, int, int],
             location: tuple[int, int],
-            fps: int = 25,
+            fps: int = 35,
             loops: int = 1,
     ):
         self.blink_and_animate_arrivals(
@@ -371,7 +371,7 @@ class Display():
     def blink_and_animate_arrivals(
             self,
             arrivals: list[tuple[tuple[int, int, int], tuple[int, int]]],
-            fps: int = 25,
+            fps: int = 35,
             loops: int = 1,
     ):
         if not arrivals:
@@ -426,13 +426,13 @@ class Display():
             for arrival in valid_arrivals:
                 self.display.draw_text("!", arrival["location"], arrival["color"])
             self.push_screen()
-            time.sleep(0.2)
+            time.sleep(0.12)
 
             for arrival in valid_arrivals:
                 x, y = arrival["location"]
                 self.display.draw_filled_rectangle((x, y), (x + 2, y + 4), (0, 0, 0))
             self.push_screen()
-            time.sleep(0.2)
+            time.sleep(0.12)
 
         dt = 1 / fps
         total_frames = max(len(arrival["positions"]) for arrival in valid_arrivals)
