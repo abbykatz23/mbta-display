@@ -48,8 +48,8 @@ class MBTAClient:
         )
 
         train_currently_arriving: bool = False
-        mins_until_next_catchable_train: Optional[int] = None
-        mins_until_second_next_catchable_train: Optional[int] = None
+        mins_until_next_leave: Optional[int] = None
+        mins_until_second_next_leave: Optional[int] = None
 
         for prediction in predictions.data:
             departure_time = prediction.attributes.departure_time
@@ -61,25 +61,26 @@ class MBTAClient:
                     continue
 
                 min_until_train = int((departure_time - now).total_seconds() // 60) + 1
+                min_until_leave = min_until_train - min_to_walk_to_station
 
                 if (
-                    not mins_until_next_catchable_train
+                    mins_until_next_leave is None
                     and min_until_train >= min_to_walk_to_station
                 ):
-                    mins_until_next_catchable_train = min_until_train
+                    mins_until_next_leave = min_until_leave
 
                 elif (
-                    mins_until_next_catchable_train
-                    and not mins_until_second_next_catchable_train
+                    mins_until_next_leave is not None
+                    and mins_until_second_next_leave is None
                     and min_until_train >= min_to_walk_to_station
                 ):
-                    mins_until_second_next_catchable_train = min_until_train
+                    mins_until_second_next_leave = min_until_leave
                     break
 
         return (
             train_currently_arriving,
-            mins_until_next_catchable_train,
-            mins_until_second_next_catchable_train,
+            mins_until_next_leave,
+            mins_until_second_next_leave,
         )
 
     def get_predictions_of_interest(
@@ -94,8 +95,9 @@ class MBTAClient:
         )
 
         train_currently_arriving: bool = False
-        mins_until_next_catchable_train: Optional[int] = None
-        mins_until_second_next_catchable_train: Optional[int] = None
+        mins_until_next_leave: Optional[int] = None
+        mins_until_second_next_leave: Optional[int] = None
+        next_catchable_train_minutes: Optional[int] = None
 
         for prediction in predictions.data:
             arrival_time = prediction.attributes.arrival_time
@@ -123,24 +125,27 @@ class MBTAClient:
                 continue
 
             min_until_train = int((arrival_time - now).total_seconds() // 60) + 1
+            min_until_leave = min_until_train - min_to_walk_to_station
 
             if (
-                not mins_until_next_catchable_train
+                mins_until_next_leave is None
                 and min_until_train >= min_to_walk_to_station
             ):
-                mins_until_next_catchable_train = min_until_train
+                mins_until_next_leave = min_until_leave
+                next_catchable_train_minutes = min_until_train
 
             elif (
-                mins_until_next_catchable_train
-                and not mins_until_second_next_catchable_train
-                and min_until_train > (mins_until_next_catchable_train + 1)
+                mins_until_next_leave is not None
+                and mins_until_second_next_leave is None
+                and next_catchable_train_minutes is not None
+                and min_until_train > (next_catchable_train_minutes + 1)
                 and min_until_train >= min_to_walk_to_station
             ):
-                mins_until_second_next_catchable_train = min_until_train
+                mins_until_second_next_leave = min_until_leave
                 break
 
         return (
             train_currently_arriving,
-            mins_until_next_catchable_train,
-            mins_until_second_next_catchable_train,
+            mins_until_next_leave,
+            mins_until_second_next_leave,
         )

@@ -114,7 +114,11 @@ class Display():
 
     def _draw_dynamic_value(self, value: int | None, location: tuple[int, int], color: tuple[int, int, int]):
         self._clear_dynamic_text_cell(location)
-        self.display.draw_text(f"{value or ''}", location, color)
+        text = "" if value is None else str(value)
+        x, y = location
+        if len(text) == 1:
+            x += 2
+        self.display.draw_text(text, (x, y), color)
 
     def sample_text(self):
         self.display.send_text(
