@@ -110,58 +110,6 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 StationID.DTC_OL_FOREST_HILLS, now, COMMUTE_TIMES[StationID.DTC_OL_FOREST_HILLS]
             )
 
-            bottom_right_alert_color = None
-            bottom_right_alert_station_key = None
-            if (
-                ashmont_braintree_currently_arriving
-                or ol_s_currently_arriving
-                or b_currently_arriving
-                or c_currently_arriving
-                or d_currently_arriving
-                or e_currently_arriving
-            ):
-                if ashmont_braintree_currently_arriving:
-                    bottom_right_alert_color = TextColor.RED.value
-                    bottom_right_alert_station_key = StationID.CHARLES_MGH_ASHMONT_BRAINTREE
-                elif ol_s_currently_arriving:
-                    bottom_right_alert_color = TextColor.ORANGE.value
-                    bottom_right_alert_station_key = StationID.DTC_OL_FOREST_HILLS
-                else:
-                    bottom_right_alert_color = TextColor.GREEN.value
-                    if b_currently_arriving:
-                        bottom_right_alert_station_key = StationID.PARK_STREET_B
-                    elif c_currently_arriving:
-                        bottom_right_alert_station_key = StationID.PARK_STREET_C
-                    elif d_currently_arriving:
-                        bottom_right_alert_station_key = StationID.PARK_STREET_D
-                    elif e_currently_arriving:
-                        bottom_right_alert_station_key = StationID.PARK_STREET_E
-
-            top_left_alert_color = None
-            top_left_alert_station_key = None
-            if (
-                alewife_currently_arriving
-                or won_currently_arriving
-                or ol_n_currently_arriving
-                or north_d_currently_arriving
-                or north_e_currently_arriving
-            ):
-                if alewife_currently_arriving:
-                    top_left_alert_color = TextColor.RED.value
-                    top_left_alert_station_key = StationID.CHARLES_MGH_ALEWIFE
-                elif ol_n_currently_arriving:
-                    top_left_alert_color = TextColor.ORANGE.value
-                    top_left_alert_station_key = StationID.DTC_OL_OAK_GROVE
-                elif won_currently_arriving:
-                    top_left_alert_color = TextColor.BLUE.value
-                    top_left_alert_station_key = StationID.BOWDOIN_WONDERLAND
-                else:
-                    top_left_alert_color = TextColor.GREEN.value
-                    if north_d_currently_arriving:
-                        top_left_alert_station_key = StationID.PARK_STREET_NORTH
-                    elif north_e_currently_arriving:
-                        top_left_alert_station_key = StationID.PARK_STREET_NORTH
-
             display.display_train_statuses(
                 b_min_to_nct_1,
                 b_min_to_nct_2,
@@ -189,27 +137,43 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
 
             arrivals_to_animate: list[tuple[tuple[int, int, int], tuple[int, int]]] = []
 
-            if bottom_right_alert_color and bottom_right_alert_station_key:
-                last_animation_at = last_animation_at_by_station.get(bottom_right_alert_station_key)
+            def should_animate(station_key: StationID) -> bool:
+                last_animation_at = last_animation_at_by_station.get(station_key)
                 if (
-                    last_animation_at is None
-                    or now - last_animation_at > timedelta(minutes=ARRIVAL_ANIMATION_COOLDOWN_MINUTES)
+                    last_animation_at is not None
+                    and now - last_animation_at <= timedelta(minutes=ARRIVAL_ANIMATION_COOLDOWN_MINUTES)
                 ):
-                    arrivals_to_animate.append(
-                        (bottom_right_alert_color, display.BOTTOM_RIGHT_ALERT_LOCATION)
-                    )
-                    last_animation_at_by_station[bottom_right_alert_station_key] = now
+                    return False
+                last_animation_at_by_station[station_key] = now
+                return True
 
-            if top_left_alert_color and top_left_alert_station_key:
-                last_animation_at = last_animation_at_by_station.get(top_left_alert_station_key)
-                if (
-                    last_animation_at is None
-                    or now - last_animation_at > timedelta(minutes=ARRIVAL_ANIMATION_COOLDOWN_MINUTES)
-                ):
-                    arrivals_to_animate.append(
-                        (top_left_alert_color, display.TOP_LEFT_ALERT_LOCATION)
-                    )
-                    last_animation_at_by_station[top_left_alert_station_key] = now
+            if ashmont_braintree_currently_arriving and should_animate(StationID.CHARLES_MGH_ASHMONT_BRAINTREE):
+                arrivals_to_animate.append((TextColor.RED.value, display.BOTTOM_RIGHT_ALERT_LOCATION))
+            if ol_s_currently_arriving and should_animate(StationID.DTC_OL_FOREST_HILLS):
+                arrivals_to_animate.append((TextColor.ORANGE.value, display.BOTTOM_RIGHT_ALERT_LOCATION))
+
+            bottom_right_green_station_ids = [
+                StationID.PARK_STREET_B if b_currently_arriving else None,
+                StationID.PARK_STREET_C if c_currently_arriving else None,
+                StationID.PARK_STREET_D if d_currently_arriving else None,
+                StationID.PARK_STREET_E if e_currently_arriving else None,
+            ]
+            if any(station_id and should_animate(station_id) for station_id in bottom_right_green_station_ids):
+                arrivals_to_animate.append((TextColor.GREEN.value, display.BOTTOM_RIGHT_ALERT_LOCATION))
+
+            if alewife_currently_arriving and should_animate(StationID.CHARLES_MGH_ALEWIFE):
+                arrivals_to_animate.append((TextColor.RED.value, display.TOP_LEFT_ALERT_LOCATION))
+            if ol_n_currently_arriving and should_animate(StationID.DTC_OL_OAK_GROVE):
+                arrivals_to_animate.append((TextColor.ORANGE.value, display.TOP_LEFT_ALERT_LOCATION))
+            if won_currently_arriving and should_animate(StationID.BOWDOIN_WONDERLAND):
+                arrivals_to_animate.append((TextColor.BLUE.value, display.TOP_LEFT_ALERT_LOCATION))
+
+            top_left_green_station_ids = [
+                StationID.PARK_STREET_NORTH if north_d_currently_arriving else None,
+                StationID.PARK_STREET_NORTH if north_e_currently_arriving else None,
+            ]
+            if any(station_id and should_animate(station_id) for station_id in top_left_green_station_ids):
+                arrivals_to_animate.append((TextColor.GREEN.value, display.TOP_LEFT_ALERT_LOCATION))
 
             if arrivals_to_animate:
                 display.blink_and_animate_arrivals(arrivals_to_animate)

@@ -1,5 +1,8 @@
 from pixoo import Pixoo
+from datetime import datetime, timedelta
+import random
 import time
+from pathlib import Path
 from PIL import Image
 
 from settings import settings
@@ -16,10 +19,23 @@ class Display():
     HEADER_GREEN_BLUE_BG_FACTOR = 0.28
     MAX_DIM_MINUTES = 10
     MIN_TEXT_BRIGHTNESS_FACTOR = 0.42
+    SPRITE_DIRECTORY = Path("static")
+    GAY_SPRITE_PATH = SPRITE_DIRECTORY / "gay.png"
+    GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR = 100
+    GAY_SPRITE_JUNE_CHANCE_DENOMINATOR = 10
+    COLOR_NAME_BY_VALUE = {
+        TextColor.RED.value: "red",
+        TextColor.ORANGE.value: "orange",
+        TextColor.GREEN.value: "green",
+        TextColor.BLUE.value: "blue",
+    }
 
     def __init__(self):
         self.display = Pixoo(PIXOO_IP)
         self.static_layout_drawn = False
+        self._sprite_path_by_color_set: dict[frozenset[str], str] | None = None
+        self._gay_sprite_chance_denominator = self.GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR
+        self._gay_sprite_chance_refresh_at = datetime.min
 
     def black_screen(self):
         self.display.fill_rgb(0,0,0)
@@ -390,18 +406,16 @@ class Display():
         if not arrivals:
             return
 
-        sprite_path_by_color = {
-            TextColor.RED.value: "red_line.png",
-            TextColor.ORANGE.value: "orange_line.png",
-            TextColor.GREEN.value: "green_line.png",
-            TextColor.BLUE.value: "blue_line.png",
-        }
+        colors_by_location: dict[tuple[int, int], set[tuple[int, int, int]]] = {}
+        for color, location in arrivals:
+            colors_by_location.setdefault(location, set()).add(color)
 
         valid_arrivals: list[dict] = []
-        for color, location in arrivals:
-            sprite_path = sprite_path_by_color.get(color)
+        for location, colors in colors_by_location.items():
+            sprite_path = self._resolve_sprite_path(colors)
             if not sprite_path:
                 continue
+            sprite_path = self._maybe_override_with_gay_sprite(sprite_path)
 
             if location == self.BOTTOM_RIGHT_ALERT_LOCATION:
                 y = 41
@@ -417,7 +431,7 @@ class Display():
 
             valid_arrivals.append(
                 {
-                    "color": color,
+                    "color": self._pick_blink_color(colors),
                     "location": location,
                     "sprite": sprite,
                     "sw": sw,
@@ -485,6 +499,74 @@ class Display():
 
                 self.push_screen()
                 time.sleep(dt)
+
+    def _load_sprite_paths_by_color_set(self) -> dict[frozenset[str], str]:
+        if self._sprite_path_by_color_set is not None:
+            return self._sprite_path_by_color_set
+
+        sprite_paths: dict[frozenset[str], str] = {}
+        valid_color_names = set(self.COLOR_NAME_BY_VALUE.values())
+
+        for path in self.SPRITE_DIRECTORY.glob("*.png"):
+            parts = path.stem.lower().split("_")
+            if not parts:
+                continue
+            if any(part not in valid_color_names for part in parts):
+                continue
+            sprite_paths[frozenset(parts)] = str(path)
+
+        self._sprite_path_by_color_set = sprite_paths
+        return sprite_paths
+
+    def _resolve_sprite_path(self, colors: set[tuple[int, int, int]]) -> str | None:
+        color_names = frozenset(
+            self.COLOR_NAME_BY_VALUE[color]
+            for color in colors
+            if color in self.COLOR_NAME_BY_VALUE
+        )
+        if not color_names:
+            return None
+
+        sprites = self._load_sprite_paths_by_color_set()
+        if color_names in sprites:
+            return sprites[color_names]
+
+        if len(color_names) == 1:
+            color_name = next(iter(color_names))
+            return str(self.SPRITE_DIRECTORY / f"{color_name}.png")
+
+        return None
+
+    def _pick_blink_color(self, colors: set[tuple[int, int, int]]) -> tuple[int, int, int]:
+        if not colors:
+            return TextColor.GREEN.value
+        return sorted(
+            colors,
+            key=lambda color: self.COLOR_NAME_BY_VALUE.get(color, "zzzz"),
+        )[0]
+
+    def _maybe_override_with_gay_sprite(self, sprite_path: str) -> str:
+        if not self.GAY_SPRITE_PATH.exists():
+            return sprite_path
+        self._refresh_gay_sprite_chance_denominator()
+        if random.randrange(self._gay_sprite_chance_denominator) == 0:
+            return str(self.GAY_SPRITE_PATH)
+        return sprite_path
+
+    def _refresh_gay_sprite_chance_denominator(self):
+        now = datetime.now()
+        if now < self._gay_sprite_chance_refresh_at:
+            return
+
+        if now.month == 6:
+            self._gay_sprite_chance_denominator = self.GAY_SPRITE_JUNE_CHANCE_DENOMINATOR
+        else:
+            self._gay_sprite_chance_denominator = self.GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR
+
+        tomorrow = now + timedelta(days=1)
+        self._gay_sprite_chance_refresh_at = tomorrow.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
     def display_train_statuses(
             self,
