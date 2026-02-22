@@ -427,7 +427,7 @@ class Display():
 
             valid_arrivals.append(
                 {
-                    "color": self._pick_blink_color(colors),
+                    "colors": self._ordered_colors(colors),
                     "location": location,
                     "sprite": sprite,
                     "sw": sw,
@@ -447,7 +447,7 @@ class Display():
         # Blink all alerts together.
         for _ in range(3):
             for arrival in valid_arrivals:
-                self.display.draw_text("!", arrival["location"], arrival["color"])
+                self._draw_alert_exclamation(arrival["location"], arrival["colors"])
             self.push_screen()
             time.sleep(0.12)
 
@@ -533,13 +533,40 @@ class Display():
 
         return None
 
-    def _pick_blink_color(self, colors: set[tuple[int, int, int]]) -> tuple[int, int, int]:
-        if not colors:
-            return TextColor.GREEN.value
-        return sorted(
+    def _ordered_colors(
+            self,
+            colors: set[tuple[int, int, int]],
+    ) -> list[tuple[int, int, int]]:
+        ordered_colors = sorted(
             colors,
             key=lambda color: self.COLOR_NAME_BY_VALUE.get(color, "zzzz"),
-        )[0]
+        )
+        return ordered_colors or [TextColor.GREEN.value]
+
+    def _draw_alert_exclamation(
+            self,
+            location: tuple[int, int],
+            colors: list[tuple[int, int, int]],
+    ):
+        if len(colors) <= 1:
+            self.display.draw_text("!", location, colors[0])
+            return
+
+        # 3x5 exclamation in the same alert cell used by draw_text.
+        line_pixels = ((1, 0), (1, 1), (1, 2))
+        dot_pixel = (1, 4)
+        x0, y0 = location
+        if len(colors) == 2:
+            dot_color, line_color = colors[0], colors[1]
+            for dx, dy in line_pixels:
+                self.display.draw_pixel((x0 + dx, y0 + dy), line_color)
+            self.display.draw_pixel((x0 + dot_pixel[0], y0 + dot_pixel[1]), dot_color)
+            return
+
+        exclamation_pixels = (*line_pixels, dot_pixel)
+        for pixel_idx, (dx, dy) in enumerate(exclamation_pixels):
+            color = colors[pixel_idx % len(colors)]
+            self.display.draw_pixel((x0 + dx, y0 + dy), color)
 
     def _maybe_override_with_roommates_sprite(self, sprite_path: str) -> str:
         if not self.ROOMMATES_SPRITE_PATH.exists():
