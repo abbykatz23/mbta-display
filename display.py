@@ -424,15 +424,21 @@ class Display():
             sw, sh = sprite.size
             if sh != 5:
                 raise ValueError(f"Expected sprite height 5px, got {sh}px")
+            opaque_pixels: list[tuple[int, int, tuple[int, int, int]]] = []
+            for sy in range(sh):
+                for sx in range(sw):
+                    r, g, b, a = sprite.getpixel((sx, sy))
+                    if a < 10:
+                        continue
+                    opaque_pixels.append((sx, sy, (r, g, b)))
 
             valid_arrivals.append(
                 {
                     "colors": self._ordered_colors(colors),
                     "location": location,
-                    "sprite": sprite,
                     "sw": sw,
-                    "sh": sh,
                     "y": y,
+                    "opaque_pixels": opaque_pixels,
                     "positions": (
                         list(range(-sw, 65))
                         if direction == AnimationDirection.LEFT_TO_RIGHT
@@ -459,11 +465,12 @@ class Display():
 
         dt = 1 / fps
         total_frames = max(len(arrival["positions"]) for arrival in valid_arrivals)
+        lanes = {arrival["y"] for arrival in valid_arrivals}
 
         for _ in range(loops):
+            next_frame_at = time.perf_counter()
             for frame_idx in range(total_frames):
                 # Clear each active train lane once per frame.
-                lanes = {arrival["y"] for arrival in valid_arrivals}
                 for lane_y in lanes:
                     for yy in range(lane_y, lane_y + 5):
                         if 0 <= yy < 64:
@@ -475,26 +482,24 @@ class Display():
                     if frame_idx >= len(arrival["positions"]):
                         continue
                     x0 = arrival["positions"][frame_idx]
-                    sprite = arrival["sprite"]
-                    sw = arrival["sw"]
-                    sh = arrival["sh"]
                     lane_y = arrival["y"]
 
-                    for sy in range(sh):
+                    for sx, sy, color in arrival["opaque_pixels"]:
                         dy = lane_y + sy
                         if dy < 0 or dy >= 64:
                             continue
-                        for sx in range(sw):
-                            dx = x0 + sx
-                            if dx < 0 or dx >= 64:
-                                continue
-                            r, g, b, a = sprite.getpixel((sx, sy))
-                            if a < 10:
-                                continue
-                            self.display.draw_pixel((dx, dy), (r, g, b))
+                        dx = x0 + sx
+                        if dx < 0 or dx >= 64:
+                            continue
+                        self.display.draw_pixel((dx, dy), color)
 
                 self.push_screen()
-                time.sleep(dt)
+                next_frame_at += dt
+                sleep_for = next_frame_at - time.perf_counter()
+                if sleep_for > 0:
+                    time.sleep(sleep_for)
+                else:
+                    next_frame_at = time.perf_counter()
 
     def _load_sprite_paths_by_color_set(self) -> dict[frozenset[str], str]:
         if self._sprite_path_by_color_set is not None:
