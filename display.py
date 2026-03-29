@@ -1,6 +1,7 @@
 from pixoo import Pixoo
 import random
 import time
+from datetime import datetime, timedelta
 from pathlib import Path
 from PIL import Image
 
@@ -21,6 +22,9 @@ class Display():
     SPRITE_DIRECTORY = Path("static")
     ROOMMATES_SPRITE_PATH = SPRITE_DIRECTORY / "roommates.png"
     ROOMMATES_SPRITE_CHANCE_DENOMINATOR = 100
+    GAY_SPRITE_PATH = SPRITE_DIRECTORY / "gay.png"
+    GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR = 100
+    GAY_SPRITE_JUNE_CHANCE_DENOMINATOR = 10
     COLOR_NAME_BY_VALUE = {
         TextColor.RED.value: "red",
         TextColor.ORANGE.value: "orange",
@@ -32,6 +36,8 @@ class Display():
         self.display = Pixoo(PIXOO_IP)
         self.static_layout_drawn = False
         self._sprite_path_by_color_set: dict[frozenset[str], str] | None = None
+        self._gay_sprite_chance_denominator = self.GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR
+        self._gay_sprite_chance_refresh_at = datetime.min
 
     def black_screen(self):
         self.display.fill_rgb(0,0,0)
@@ -412,6 +418,7 @@ class Display():
             if not sprite_path:
                 continue
             sprite_path = self._maybe_override_with_roommates_sprite(sprite_path)
+            sprite_path = self._maybe_override_with_gay_sprite(sprite_path)
 
             if location == self.BOTTOM_RIGHT_ALERT_LOCATION:
                 y = 41
@@ -579,6 +586,27 @@ class Display():
         if random.randrange(self.ROOMMATES_SPRITE_CHANCE_DENOMINATOR) == 0:
             return str(self.ROOMMATES_SPRITE_PATH)
         return sprite_path
+
+    def _maybe_override_with_gay_sprite(self, sprite_path: str) -> str:
+        if not self.GAY_SPRITE_PATH.exists():
+            return sprite_path
+        self._refresh_gay_sprite_chance_denominator()
+        if random.randrange(self._gay_sprite_chance_denominator) == 0:
+            return str(self.GAY_SPRITE_PATH)
+        return sprite_path
+
+    def _refresh_gay_sprite_chance_denominator(self):
+        now = datetime.now()
+        if now < self._gay_sprite_chance_refresh_at:
+            return
+        if now.month == 6:
+            self._gay_sprite_chance_denominator = self.GAY_SPRITE_JUNE_CHANCE_DENOMINATOR
+        else:
+            self._gay_sprite_chance_denominator = self.GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR
+        tomorrow = now + timedelta(days=1)
+        self._gay_sprite_chance_refresh_at = tomorrow.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
     def display_train_statuses(
             self,
