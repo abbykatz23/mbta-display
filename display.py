@@ -25,6 +25,7 @@ class Display():
     MAX_DIM_MINUTES = 10
     MIN_TEXT_BRIGHTNESS_FACTOR = 0.42
     SPRITE_DIRECTORY = Path("static")
+    NORMAL_TRAINS_DIR = SPRITE_DIRECTORY / "normal_trains"
     SPECIAL_TRAINS_DIR = SPRITE_DIRECTORY / "special_trains"
     SPECIAL_TRAIN_CHANCE_DENOMINATOR = 20
     SPECIAL_TRAIN_BIRTHDAY_CHANCE_DENOMINATOR = 3
@@ -518,7 +519,7 @@ class Display():
         sprite_paths: dict[frozenset[str], str] = {}
         valid_color_names = set(self.COLOR_NAME_BY_VALUE.values())
 
-        for path in self.SPRITE_DIRECTORY.glob("*.png"):
+        for path in self.NORMAL_TRAINS_DIR.glob("*.png"):
             parts = path.stem.lower().split("_")
             if not parts:
                 continue
@@ -544,7 +545,7 @@ class Display():
 
         if len(color_names) == 1:
             color_name = next(iter(color_names))
-            return str(self.SPRITE_DIRECTORY / f"{color_name}.png")
+            return str(self.NORMAL_TRAINS_DIR / f"{color_name}.png")
 
         return None
 
