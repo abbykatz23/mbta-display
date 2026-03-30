@@ -5,6 +5,9 @@ from enums import StationID
 class Settings(BaseSettings):
     mbta_api_key: str
     pixoo_ip_address: str
+    mbta_server_url: str = ""
+    pi_api_key: str = ""
+
 
     model_config = {
         "env_file": ".env"

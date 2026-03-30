@@ -6,6 +6,7 @@ from mbta_client import MBTAClient
 from enums import StationID, RouteID, TextColor
 from display import Display
 from settings import COMMUTE_TIMES
+from sprite_syncer import sync_sprites
 
 INTERVAL_SECONDS = 20
 EST = tzoffset(None, -18000)
@@ -185,13 +186,27 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
             await asyncio.sleep(INTERVAL_SECONDS)
 
 
+async def sprite_sync_loop():
+    while True:
+        try:
+            await asyncio.get_event_loop().run_in_executor(None, sync_sprites)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            pass
+        now = datetime.now()
+        tomorrow = (now + timedelta(days=1)).replace(hour=now.hour, minute=now.minute, second=0, microsecond=0)
+        await asyncio.sleep((tomorrow - now).total_seconds())
+
+
 async def main():
     mbta_client = MBTAClient()
     display = Display()
     display.black_screen()
     task = asyncio.create_task(poll_loop(mbta_client, display))
+    sync_task = asyncio.create_task(sprite_sync_loop())
     try:
-        await task
+        await asyncio.gather(task, sync_task)
     except asyncio.CancelledError:
         print("cancelled")
 

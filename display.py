@@ -1,7 +1,7 @@
 from pixoo import Pixoo
 import random
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from PIL import Image
 
@@ -9,6 +9,11 @@ from settings import settings
 from enums import TextColor, AnimationDirection
 
 PIXOO_IP = settings.pixoo_ip_address
+
+_HARDCODED_SPECIAL_TRAINS = {
+    "gay": {"birthday_month": 6},
+    "roommates": {},
+}
 
 
 class Display():
@@ -20,11 +25,10 @@ class Display():
     MAX_DIM_MINUTES = 10
     MIN_TEXT_BRIGHTNESS_FACTOR = 0.42
     SPRITE_DIRECTORY = Path("static")
-    ROOMMATES_SPRITE_PATH = SPRITE_DIRECTORY / "roommates.png"
-    ROOMMATES_SPRITE_CHANCE_DENOMINATOR = 100
-    GAY_SPRITE_PATH = SPRITE_DIRECTORY / "gay.png"
-    GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR = 100
-    GAY_SPRITE_JUNE_CHANCE_DENOMINATOR = 10
+    SPECIAL_TRAINS_DIR = SPRITE_DIRECTORY / "special_trains"
+    SPECIAL_TRAIN_CHANCE_DENOMINATOR = 20
+    SPECIAL_TRAIN_BIRTHDAY_CHANCE_DENOMINATOR = 3
+    SPECIAL_TRAIN_METADATA_CACHE_SECONDS = 60
     COLOR_NAME_BY_VALUE = {
         TextColor.RED.value: "red",
         TextColor.ORANGE.value: "orange",
@@ -36,8 +40,8 @@ class Display():
         self.display = Pixoo(PIXOO_IP)
         self.static_layout_drawn = False
         self._sprite_path_by_color_set: dict[frozenset[str], str] | None = None
-        self._gay_sprite_chance_denominator = self.GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR
-        self._gay_sprite_chance_refresh_at = datetime.min
+        self._special_train_metadata: dict = {}
+        self._special_train_metadata_loaded_at = datetime.min
 
     def black_screen(self):
         self.display.fill_rgb(0,0,0)
@@ -417,8 +421,7 @@ class Display():
             sprite_path = self._resolve_sprite_path(colors)
             if not sprite_path:
                 continue
-            sprite_path = self._maybe_override_with_roommates_sprite(sprite_path)
-            sprite_path = self._maybe_override_with_gay_sprite(sprite_path)
+            sprite_path = self._maybe_override_with_special_train(sprite_path)
 
             if location == self.BOTTOM_RIGHT_ALERT_LOCATION:
                 y = 41
@@ -580,33 +583,46 @@ class Display():
             color = colors[pixel_idx % len(colors)]
             self.display.draw_pixel((x0 + dx, y0 + dy), color)
 
-    def _maybe_override_with_roommates_sprite(self, sprite_path: str) -> str:
-        if not self.ROOMMATES_SPRITE_PATH.exists():
-            return sprite_path
-        if random.randrange(self.ROOMMATES_SPRITE_CHANCE_DENOMINATOR) == 0:
-            return str(self.ROOMMATES_SPRITE_PATH)
-        return sprite_path
-
-    def _maybe_override_with_gay_sprite(self, sprite_path: str) -> str:
-        if not self.GAY_SPRITE_PATH.exists():
-            return sprite_path
-        self._refresh_gay_sprite_chance_denominator()
-        if random.randrange(self._gay_sprite_chance_denominator) == 0:
-            return str(self.GAY_SPRITE_PATH)
-        return sprite_path
-
-    def _refresh_gay_sprite_chance_denominator(self):
+    def _load_special_train_metadata(self) -> dict:
         now = datetime.now()
-        if now < self._gay_sprite_chance_refresh_at:
-            return
-        if now.month == 6:
-            self._gay_sprite_chance_denominator = self.GAY_SPRITE_JUNE_CHANCE_DENOMINATOR
-        else:
-            self._gay_sprite_chance_denominator = self.GAY_SPRITE_DEFAULT_CHANCE_DENOMINATOR
-        tomorrow = now + timedelta(days=1)
-        self._gay_sprite_chance_refresh_at = tomorrow.replace(
-            hour=0, minute=0, second=0, microsecond=0
+        if (now - self._special_train_metadata_loaded_at).total_seconds() < self.SPECIAL_TRAIN_METADATA_CACHE_SECONDS:
+            return self._special_train_metadata
+        import json
+        file_metadata = {}
+        metadata_path = self.SPECIAL_TRAINS_DIR / "metadata.json"
+        if metadata_path.exists():
+            try:
+                file_metadata = json.loads(metadata_path.read_text())
+            except Exception:
+                pass
+        self._special_train_metadata = {**_HARDCODED_SPECIAL_TRAINS, **file_metadata}
+        self._special_train_metadata_loaded_at = now
+        return self._special_train_metadata
+
+    def _maybe_override_with_special_train(self, sprite_path: str) -> str:
+        metadata = self._load_special_train_metadata()
+
+        now = datetime.now()
+        candidates = [
+            sprite_id for sprite_id in metadata
+            if (self.SPECIAL_TRAINS_DIR / f"{sprite_id}.png").exists()
+        ]
+        if not candidates:
+            return sprite_path
+
+        chosen_id = random.choice(candidates)
+        entry = metadata[chosen_id]
+        is_special_day = (
+            ("birthday" in entry and entry["birthday"] == f"{now.month:02d}-{now.day:02d}")
+            or ("birthday_month" in entry and entry["birthday_month"] == now.month)
         )
+        denominator = (
+            self.SPECIAL_TRAIN_BIRTHDAY_CHANCE_DENOMINATOR if is_special_day
+            else self.SPECIAL_TRAIN_CHANCE_DENOMINATOR
+        )
+        if random.randrange(denominator) == 0:
+            return str(self.SPECIAL_TRAINS_DIR / f"{chosen_id}.png")
+        return sprite_path
 
     def display_train_statuses(
             self,
