@@ -12,6 +12,7 @@ PIXOO_IP = settings.pixoo_ip_address
 
 _HARDCODED_SPECIAL_TRAINS = {
     "gay": {"birthday_month": 6},
+    "july": {"birthday_month": 7},
     "roommates": {},
 }
 
