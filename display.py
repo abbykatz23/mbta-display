@@ -11,8 +11,17 @@ from enums import TextColor, AnimationDirection
 PIXOO_IP = settings.pixoo_ip_address
 
 _HARDCODED_SPECIAL_TRAINS = {
-    "gay": {"birthday_month": 6},
+    "june": {"birthday_month": 6},
     "july": {"birthday_month": 7},
+    "april": {"birthday_month": 4},
+    "may": {"birthday_month": 5},
+    "march": {"birthday_month": 3, "flip_rtl": True},
+    "december": {"birthday_month": 12},
+    "february": {"birthday_month": 2},
+    "september": {"birthday_month": 9},
+    "january": {"birthday_month": 1},
+    "november": {"birthday_month": 11},
+    "october": {"birthday_month": 10},
     "roommates": {},
 }
 
@@ -433,6 +442,10 @@ class Display():
                 direction = AnimationDirection.LEFT_TO_RIGHT
 
             sprite = Image.open(sprite_path).convert("RGBA")
+            if direction == AnimationDirection.RIGHT_TO_LEFT:
+                sprite_id = Path(sprite_path).stem
+                if self._load_special_train_metadata().get(sprite_id, {}).get("flip_rtl"):
+                    sprite = sprite.transpose(Image.FLIP_LEFT_RIGHT)
             sw, sh = sprite.size
             if sh != 5:
                 raise ValueError(f"Expected sprite height 5px, got {sh}px")
