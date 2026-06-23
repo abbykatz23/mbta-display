@@ -1,7 +1,7 @@
 from pixoo import Pixoo
 import random
 import time
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from PIL import Image
 
@@ -38,8 +38,9 @@ class Display():
     SPRITE_DIRECTORY = Path("static")
     NORMAL_TRAINS_DIR = SPRITE_DIRECTORY / "normal_trains"
     SPECIAL_TRAINS_DIR = SPRITE_DIRECTORY / "special_trains"
-    SPECIAL_TRAIN_CHANCE_DENOMINATOR = 20
-    SPECIAL_TRAIN_BIRTHDAY_CHANCE_DENOMINATOR = 3
+    BIRTHDAY_WEEK_DENOMINATOR = 6
+    BIRTHDAY_MONTH_DENOMINATOR = 6
+    RANDOM_SPECIAL_DENOMINATOR = 50
     SPECIAL_TRAIN_METADATA_CACHE_SECONDS = 60
     COLOR_NAME_BY_VALUE = {
         TextColor.RED.value: "red",
@@ -615,10 +616,29 @@ class Display():
         self._special_train_metadata_loaded_at = now
         return self._special_train_metadata
 
+    @staticmethod
+    def _in_birthday_week(birthday_str: str, today: date) -> bool:
+        try:
+            month, day = int(birthday_str[:2]), int(birthday_str[3:])
+        except (ValueError, IndexError):
+            return False
+        for year in (today.year, today.year - 1):
+            try:
+                bday = date(year, month, day)
+            except ValueError:
+                if month == 2 and day == 29:
+                    bday = date(year, 3, 1)
+                else:
+                    continue
+            if 0 <= (today - bday).days < 7:
+                return True
+        return False
+
     def _maybe_override_with_special_train(self, sprite_path: str) -> str:
         metadata = self._load_special_train_metadata()
-
         now = datetime.now()
+        today = now.date()
+
         candidates = [
             sprite_id for sprite_id in metadata
             if (self.SPECIAL_TRAINS_DIR / f"{sprite_id}.png").exists()
@@ -626,19 +646,23 @@ class Display():
         if not candidates:
             return sprite_path
 
-        chosen_id = random.choice(candidates)
-        entry = metadata[chosen_id]
-        is_special_day = (
-            ("birthday" in entry and entry["birthday"] == f"{now.month:02d}-{now.day:02d}")
-            or ("birthday_month" in entry and entry["birthday_month"] == now.month)
-        )
-        denominator = (
-            self.SPECIAL_TRAIN_BIRTHDAY_CHANCE_DENOMINATOR if is_special_day
-            else self.SPECIAL_TRAIN_CHANCE_DENOMINATOR
-        )
-        if random.randrange(denominator) == 0:
-            return str(self.SPECIAL_TRAINS_DIR / f"{chosen_id}.png")
-        return sprite_path
+        winners = []
+
+        for sprite_id in candidates:
+            entry = metadata[sprite_id]
+            if "birthday" in entry and self._in_birthday_week(entry["birthday"], today):
+                if random.randrange(self.BIRTHDAY_WEEK_DENOMINATOR) == 0:
+                    winners.append(sprite_id)
+            elif "birthday_month" in entry and entry["birthday_month"] == now.month:
+                if random.randrange(self.BIRTHDAY_MONTH_DENOMINATOR) == 0:
+                    winners.append(sprite_id)
+
+        if random.randrange(self.RANDOM_SPECIAL_DENOMINATOR) == 0:
+            winners.append(random.choice(candidates))
+
+        if not winners:
+            return sprite_path
+        return str(self.SPECIAL_TRAINS_DIR / f"{random.choice(winners)}.png")
 
     def display_train_statuses(
             self,

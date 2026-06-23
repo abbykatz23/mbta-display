@@ -1,10 +1,12 @@
 import base64
+import io
 import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+from PIL import Image
 
 from settings import settings
 
@@ -47,14 +49,52 @@ def sync_sprites() -> None:
         sprite_id = sprite["id"]
         png_path = SPECIAL_TRAINS_DIR / f"{sprite_id}.png"
         png_bytes = base64.b64decode(sprite["png_base64"])
-        png_path.write_bytes(png_bytes)
+        car = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+        triple = _build_triple_car_sprite(car)
+        buf = io.BytesIO()
+        triple.save(buf, format="PNG")
+        png_path.write_bytes(buf.getvalue())
         metadata[sprite_id] = {
             "birthday": sprite["birthday"],
+            "flip_rtl": True,
         }
         logger.info("Synced sprite %s", sprite_id)
 
     _write_metadata(metadata)
     _write_last_synced(datetime.now(timezone.utc).isoformat())
+
+
+def _build_triple_car_sprite(car: Image.Image) -> Image.Image:
+    LINK_ROW = 3
+    LINK_COLOR = (70, 70, 70, 255)
+
+    w, h = car.size
+    assembled = Image.new("RGBA", (3 * w + 2, h), (0, 0, 0, 0))
+    assembled.paste(car, (0, 0))
+    assembled.paste(car, (w + 1, 0))
+    assembled.paste(car, (2 * w + 2, 0))
+
+    total_width = assembled.width
+    for link_x in (w, 2 * w + 1):
+        assembled.putpixel((link_x, LINK_ROW), LINK_COLOR)
+
+        col = link_x - 1
+        while col >= 0:
+            _, _, _, a = assembled.getpixel((col, LINK_ROW))
+            if a >= 10:
+                break
+            assembled.putpixel((col, LINK_ROW), LINK_COLOR)
+            col -= 1
+
+        col = link_x + 1
+        while col < total_width:
+            _, _, _, a = assembled.getpixel((col, LINK_ROW))
+            if a >= 10:
+                break
+            assembled.putpixel((col, LINK_ROW), LINK_COLOR)
+            col += 1
+
+    return assembled
 
 
 def _read_metadata() -> dict:
