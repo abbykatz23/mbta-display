@@ -1,4 +1,5 @@
 from pixoo import Pixoo
+import json
 import random
 import time
 from datetime import date, datetime
@@ -616,6 +617,26 @@ class Display():
         self._special_train_metadata_loaded_at = now
         return self._special_train_metadata
 
+    def _pop_priority_queue(self) -> str | None:
+        queue_path = self.SPECIAL_TRAINS_DIR / "priority_queue.json"
+        if not queue_path.exists():
+            return None
+        try:
+            queue = json.loads(queue_path.read_text())
+        except Exception:
+            return None
+        while queue:
+            sprite_id = queue.pop(0)
+            sprite_path = self.SPECIAL_TRAINS_DIR / f"{sprite_id}.png"
+            if sprite_path.exists():
+                if queue:
+                    queue_path.write_text(json.dumps(queue))
+                else:
+                    queue_path.unlink(missing_ok=True)
+                return str(sprite_path)
+        queue_path.unlink(missing_ok=True)
+        return None
+
     @staticmethod
     def _in_birthday_week(birthday_str: str, today: date) -> bool:
         try:
@@ -635,6 +656,10 @@ class Display():
         return False
 
     def _maybe_override_with_special_train(self, sprite_path: str) -> str:
+        priority = self._pop_priority_queue()
+        if priority:
+            return priority
+
         metadata = self._load_special_train_metadata()
         now = datetime.now()
         today = now.date()

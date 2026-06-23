@@ -194,9 +194,7 @@ async def sprite_sync_loop():
             raise
         except Exception:
             pass
-        now = datetime.now()
-        tomorrow = (now + timedelta(days=1)).replace(hour=now.hour, minute=now.minute, second=0, microsecond=0)
-        await asyncio.sleep((tomorrow - now).total_seconds())
+        await asyncio.sleep(300)
 
 
 async def main():

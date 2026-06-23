@@ -58,6 +58,7 @@ def sync_sprites() -> None:
             "birthday": sprite["birthday"],
             "flip_rtl": True,
         }
+        _append_to_priority_queue(sprite_id)
         logger.info("Synced sprite %s", sprite_id)
 
     _write_metadata(metadata)
@@ -95,6 +96,19 @@ def _build_triple_car_sprite(car: Image.Image) -> Image.Image:
             col += 1
 
     return assembled
+
+
+def _append_to_priority_queue(sprite_id: str) -> None:
+    queue_path = SPECIAL_TRAINS_DIR / "priority_queue.json"
+    queue = []
+    if queue_path.exists():
+        try:
+            queue = json.loads(queue_path.read_text())
+        except Exception:
+            queue = []
+    if sprite_id not in queue:
+        queue.append(sprite_id)
+    queue_path.write_text(json.dumps(queue))
 
 
 def _read_metadata() -> dict:
