@@ -63,6 +63,7 @@ def sync_sprites() -> None:
 
     _write_metadata(metadata)
     _write_last_synced(datetime.now(timezone.utc).isoformat())
+    _process_queue()
 
 
 def _build_triple_car_sprite(car: Image.Image) -> Image.Image:
@@ -96,6 +97,25 @@ def _build_triple_car_sprite(car: Image.Image) -> Image.Image:
             col += 1
 
     return assembled
+
+
+def _process_queue() -> None:
+    if not settings.mbta_server_url or not settings.pi_api_key:
+        return
+    try:
+        response = requests.get(
+            f"{settings.mbta_server_url}/queued",
+            headers={"X-API-Key": settings.pi_api_key},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except Exception as e:
+        logger.warning("Queue check failed: %s", e)
+        return
+    for sprite_id in response.json().get("ids", []):
+        if (SPECIAL_TRAINS_DIR / f"{sprite_id}.png").exists():
+            _append_to_priority_queue(sprite_id)
+            logger.info("Priority queued sprite %s", sprite_id)
 
 
 def _append_to_priority_queue(sprite_id: str) -> None:
