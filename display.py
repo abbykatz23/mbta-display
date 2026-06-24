@@ -673,12 +673,17 @@ class Display():
 
         winners = []
 
+        birthday_week_sprites = [
+            sprite_id for sprite_id in candidates
+            if "birthday" in metadata[sprite_id]
+            and self._in_birthday_week(metadata[sprite_id]["birthday"], today)
+        ]
+        if birthday_week_sprites and random.randrange(self.BIRTHDAY_WEEK_DENOMINATOR) == 0:
+            winners.append(random.choice(birthday_week_sprites))
+
         for sprite_id in candidates:
             entry = metadata[sprite_id]
-            if "birthday" in entry and self._in_birthday_week(entry["birthday"], today):
-                if random.randrange(self.BIRTHDAY_WEEK_DENOMINATOR) == 0:
-                    winners.append(sprite_id)
-            elif "birthday_month" in entry and entry["birthday_month"] == now.month:
+            if "birthday_month" in entry and entry["birthday_month"] == now.month:
                 if random.randrange(self.BIRTHDAY_MONTH_DENOMINATOR) == 0:
                     winners.append(sprite_id)
 
