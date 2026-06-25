@@ -110,8 +110,8 @@ def _process_queue() -> None:
     if not settings.mbta_server_url or not settings.pi_api_key:
         return
     try:
-        response = requests.get(
-            f"{settings.mbta_server_url}/queued",
+        response = requests.post(
+            f"{settings.mbta_server_url}/queued/consume",
             headers={"X-API-Key": settings.pi_api_key},
             timeout=10,
         )
