@@ -57,13 +57,13 @@ def sync_sprites() -> None:
         png_path = SPECIAL_TRAINS_DIR / f"{sprite_id}.png"
         png_bytes = base64.b64decode(sprite["png_base64"])
         car = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-        triple = _build_triple_car_sprite(car)
+        multi = _build_multi_car_sprite(car)
         buf = io.BytesIO()
-        triple.save(buf, format="PNG")
+        multi.save(buf, format="PNG")
         png_path.write_bytes(buf.getvalue())
         metadata[sprite_id] = {
             "birthday": sprite["birthday"],
-            "flip_rtl": True,
+            "flip_rtl": sprite.get("flip_rtl", True),
         }
         _append_to_priority_queue(sprite_id)
         logger.info("Synced sprite %s", sprite_id)
@@ -73,18 +73,20 @@ def sync_sprites() -> None:
     _process_queue()
 
 
-def _build_triple_car_sprite(car: Image.Image) -> Image.Image:
+def _build_multi_car_sprite(car: Image.Image) -> Image.Image:
     LINK_ROW = 3
     LINK_COLOR = (70, 70, 70, 255)
 
     w, h = car.size
-    assembled = Image.new("RGBA", (3 * w + 2, h), (0, 0, 0, 0))
-    assembled.paste(car, (0, 0))
-    assembled.paste(car, (w + 1, 0))
-    assembled.paste(car, (2 * w + 2, 0))
+    car_count = 5 if w < 10 else 3
+    gap_count = car_count - 1
+    total_width = car_count * w + gap_count
+    assembled = Image.new("RGBA", (total_width, h), (0, 0, 0, 0))
+    for i in range(car_count):
+        assembled.paste(car, (i * (w + 1), 0))
 
-    total_width = assembled.width
-    for link_x in (w, 2 * w + 1):
+    gap_columns = tuple(i * (w + 1) + w for i in range(gap_count))
+    for link_x in gap_columns:
         assembled.putpixel((link_x, LINK_ROW), LINK_COLOR)
 
         col = link_x - 1
