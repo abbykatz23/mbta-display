@@ -77,7 +77,7 @@ def _build_multi_car_sprite(car: Image.Image) -> Image.Image:
     LINK_COLOR = (70, 70, 70, 255)
 
     w, h = car.size
-    car_count = 5 if w < 10 else 3
+    car_count = 5 if w < 15 else 3
     gap_count = car_count - 1
     total_width = car_count * w + gap_count
     assembled = Image.new("RGBA", (total_width, h), (0, 0, 0, 0))
