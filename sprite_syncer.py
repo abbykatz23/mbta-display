@@ -110,6 +110,7 @@ def _build_multi_car_sprite(car: Image.Image) -> Image.Image:
 def _process_queue() -> None:
     if not settings.mbta_server_url or not settings.pi_api_key:
         return
+
     try:
         response = requests.post(
             f"{settings.mbta_server_url}/queued/consume",
@@ -117,16 +118,29 @@ def _process_queue() -> None:
             timeout=10,
         )
         response.raise_for_status()
+        for sprite_id in response.json().get("ids", []):
+            if not _UUID_RE.match(sprite_id):
+                logger.warning("Skipping queued sprite with invalid id: %r", sprite_id)
+                continue
+            if (SPECIAL_TRAINS_DIR / f"{sprite_id}.png").exists():
+                _append_to_priority_queue(sprite_id)
+                logger.info("Priority queued sprite %s", sprite_id)
     except Exception as e:
         logger.warning("Queue check failed: %s", e)
-        return
-    for sprite_id in response.json().get("ids", []):
-        if not _UUID_RE.match(sprite_id):
-            logger.warning("Skipping queued sprite with invalid id: %r", sprite_id)
-            continue
-        if (SPECIAL_TRAINS_DIR / f"{sprite_id}.png").exists():
-            _append_to_priority_queue(sprite_id)
-            logger.info("Priority queued sprite %s", sprite_id)
+
+    try:
+        response = requests.post(
+            f"{settings.mbta_server_url}/queued-special/consume",
+            headers={"X-API-Key": settings.pi_api_key},
+            timeout=10,
+        )
+        response.raise_for_status()
+        for name in response.json().get("names", []):
+            if (SPECIAL_TRAINS_DIR / f"{name}.png").exists():
+                _append_to_special_priority_queue(name)
+                logger.info("Priority queued special train %s", name)
+    except Exception as e:
+        logger.warning("Special queue check failed: %s", e)
 
 
 def _append_to_priority_queue(sprite_id: str) -> None:
@@ -140,6 +154,20 @@ def _append_to_priority_queue(sprite_id: str) -> None:
             queue = []
     if sprite_id not in queue:
         queue.append(sprite_id)
+    queue_path.write_text(json.dumps(queue))
+
+
+def _append_to_special_priority_queue(name: str) -> None:
+    queue_path = SPECIAL_TRAINS_DIR / "special_priority_queue.json"
+    queue = []
+    if queue_path.exists():
+        try:
+            queue = json.loads(queue_path.read_text())
+        except Exception as e:
+            logger.warning("Could not parse special_priority_queue.json: %s", e)
+            queue = []
+    if name not in queue:
+        queue.append(name)
     queue_path.write_text(json.dumps(queue))
 
 

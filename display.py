@@ -607,6 +607,23 @@ class Display():
         return self._special_train_metadata
 
     def _pop_priority_queue(self) -> str | None:
+        special_queue_path = self.SPECIAL_TRAINS_DIR / "special_priority_queue.json"
+        if special_queue_path.exists():
+            try:
+                queue = json.loads(special_queue_path.read_text())
+            except Exception:
+                queue = []
+            while queue:
+                name = queue.pop(0)
+                sprite_path = self.SPECIAL_TRAINS_DIR / f"{name}.png"
+                if sprite_path.exists():
+                    if queue:
+                        special_queue_path.write_text(json.dumps(queue))
+                    else:
+                        special_queue_path.unlink(missing_ok=True)
+                    return str(sprite_path)
+            special_queue_path.unlink(missing_ok=True)
+
         queue_path = self.SPECIAL_TRAINS_DIR / "priority_queue.json"
         if not queue_path.exists():
             return None
@@ -665,13 +682,10 @@ class Display():
 
         winners = []
 
-        birthday_week_sprites = [
-            sprite_id for sprite_id in candidates
-            if "birthday" in metadata[sprite_id]
-            and self._in_birthday_week(metadata[sprite_id]["birthday"], today)
-        ]
-        if birthday_week_sprites and random.randrange(self.BIRTHDAY_WEEK_DENOMINATOR) == 0:
-            winners.append(random.choice(birthday_week_sprites))
+        for sprite_id in candidates:
+            if "birthday" in metadata[sprite_id] and self._in_birthday_week(metadata[sprite_id]["birthday"], today):
+                if random.randrange(self.BIRTHDAY_WEEK_DENOMINATOR) == 0:
+                    winners.append(sprite_id)
 
         for sprite_id in candidates:
             entry = metadata[sprite_id]
