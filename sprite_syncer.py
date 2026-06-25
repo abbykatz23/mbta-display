@@ -65,7 +65,6 @@ def sync_sprites() -> None:
             "birthday": sprite["birthday"],
             "flip_rtl": sprite.get("flip_rtl", True),
         }
-        _append_to_priority_queue(sprite_id)
         logger.info("Synced sprite %s", sprite_id)
 
     _write_metadata(metadata)
