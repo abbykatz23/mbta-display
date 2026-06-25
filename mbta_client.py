@@ -30,10 +30,10 @@ class MBTAClient:
         }
         headers = get_headers()
         res = requests.get(
-            self.PREDICTIONS_URL, params=params, headers=headers, verify=False
+            self.PREDICTIONS_URL, params=params, headers=headers, timeout=10
         )
+        res.raise_for_status()
         res_data = res.json()
-        print("res: ", res)
         return PredictionResponse.model_validate(res_data)
 
     def get_eol_predictions_of_interest(

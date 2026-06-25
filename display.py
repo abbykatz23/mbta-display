@@ -1,5 +1,6 @@
 from pixoo import Pixoo
 import json
+import re
 import random
 import time
 from datetime import date, datetime
@@ -10,6 +11,8 @@ from settings import settings
 from enums import TextColor, AnimationDirection
 
 PIXOO_IP = settings.pixoo_ip_address
+
+_UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 
 _HARDCODED_SPECIAL_TRAINS = {
     "june": {"birthday_month": 6},
@@ -168,19 +171,6 @@ class Display():
         if len(text) == 1:
             x += 2
         self.display.draw_text(text, (x, y), draw_color)
-
-    def sample_text(self):
-        self.display.send_text(
-            "hello, Divoom",
-            (0, 40),
-            (255, 255, 0),
-            identifier=4,
-            font=3,
-            width=64,
-            movement_speed=0
-        )
-    def custom_text_payload(self, payload: dict):
-        self.display.send_text(**payload)
 
     def draw_station_label(
             self,
@@ -605,14 +595,13 @@ class Display():
         now = datetime.now()
         if (now - self._special_train_metadata_loaded_at).total_seconds() < self.SPECIAL_TRAIN_METADATA_CACHE_SECONDS:
             return self._special_train_metadata
-        import json
         file_metadata = {}
         metadata_path = self.SPECIAL_TRAINS_DIR / "metadata.json"
         if metadata_path.exists():
             try:
                 file_metadata = json.loads(metadata_path.read_text())
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Warning: could not parse special_trains metadata: {e}")
         self._special_train_metadata = {**_HARDCODED_SPECIAL_TRAINS, **file_metadata}
         self._special_train_metadata_loaded_at = now
         return self._special_train_metadata
@@ -627,6 +616,8 @@ class Display():
             return None
         while queue:
             sprite_id = queue.pop(0)
+            if not _UUID_RE.match(sprite_id):
+                continue
             sprite_path = self.SPECIAL_TRAINS_DIR / f"{sprite_id}.png"
             if sprite_path.exists():
                 if queue:
@@ -666,7 +657,8 @@ class Display():
 
         candidates = [
             sprite_id for sprite_id in metadata
-            if (self.SPECIAL_TRAINS_DIR / f"{sprite_id}.png").exists()
+            if (sprite_id in _HARDCODED_SPECIAL_TRAINS or _UUID_RE.match(sprite_id))
+            and (self.SPECIAL_TRAINS_DIR / f"{sprite_id}.png").exists()
         ]
         if not candidates:
             return sprite_path

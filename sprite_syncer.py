@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -9,6 +10,8 @@ import requests
 from PIL import Image
 
 from settings import settings
+
+_UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 
 SPECIAL_TRAINS_DIR = Path("static/special_trains")
 METADATA_PATH = SPECIAL_TRAINS_DIR / "metadata.json"
@@ -19,6 +22,7 @@ logger = logging.getLogger(__name__)
 def sync_sprites() -> None:
     """Download any newly approved sprites from mbta-server and update metadata."""
     if not settings.mbta_server_url or not settings.pi_api_key:
+        logger.info("Sprite syncing is disabled (mbta_server_url or pi_api_key not set)")
         return
 
     SPECIAL_TRAINS_DIR.mkdir(parents=True, exist_ok=True)
@@ -47,6 +51,9 @@ def sync_sprites() -> None:
     metadata = _read_metadata()
     for sprite in sprites:
         sprite_id = sprite["id"]
+        if not _UUID_RE.match(sprite_id):
+            logger.warning("Skipping sprite with invalid id: %r", sprite_id)
+            continue
         png_path = SPECIAL_TRAINS_DIR / f"{sprite_id}.png"
         png_bytes = base64.b64decode(sprite["png_base64"])
         car = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
@@ -113,6 +120,9 @@ def _process_queue() -> None:
         logger.warning("Queue check failed: %s", e)
         return
     for sprite_id in response.json().get("ids", []):
+        if not _UUID_RE.match(sprite_id):
+            logger.warning("Skipping queued sprite with invalid id: %r", sprite_id)
+            continue
         if (SPECIAL_TRAINS_DIR / f"{sprite_id}.png").exists():
             _append_to_priority_queue(sprite_id)
             logger.info("Priority queued sprite %s", sprite_id)
@@ -124,7 +134,8 @@ def _append_to_priority_queue(sprite_id: str) -> None:
     if queue_path.exists():
         try:
             queue = json.loads(queue_path.read_text())
-        except Exception:
+        except Exception as e:
+            logger.warning("Could not parse priority_queue.json: %s", e)
             queue = []
     if sprite_id not in queue:
         queue.append(sprite_id)

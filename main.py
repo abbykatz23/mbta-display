@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from dateutil.tz import tzoffset
+from dateutil.tz import gettz
 
 from mbta_client import MBTAClient
 from enums import StationID, RouteID, TextColor
@@ -9,7 +9,7 @@ from settings import COMMUTE_TIMES
 from sprite_syncer import sync_sprites, _process_queue
 
 INTERVAL_SECONDS = 20
-EST = tzoffset(None, -18000)
+EASTERN = gettz("America/New_York")
 ARRIVAL_ANIMATION_COOLDOWN_MINUTES = 3
 
 
@@ -18,7 +18,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
 
     while True:
         try:
-            now = datetime.now(EST)
+            now = datetime.now(EASTERN)
 
             (
                 b_currently_arriving,
@@ -159,7 +159,11 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 StationID.PARK_STREET_D if d_currently_arriving else None,
                 StationID.PARK_STREET_E if e_currently_arriving else None,
             ]
-            if any(station_id and should_animate(station_id) for station_id in bottom_right_green_station_ids):
+            green_should_animate = [
+                station_id for station_id in bottom_right_green_station_ids
+                if station_id and should_animate(station_id)
+            ]
+            if green_should_animate:
                 arrivals_to_animate.append((TextColor.GREEN.value, display.BOTTOM_RIGHT_ALERT_LOCATION))
 
             if alewife_currently_arriving and should_animate(StationID.CHARLES_MGH_ALEWIFE):
@@ -169,11 +173,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
             if won_currently_arriving and should_animate(StationID.BOWDOIN_WONDERLAND):
                 arrivals_to_animate.append((TextColor.BLUE.value, display.TOP_LEFT_ALERT_LOCATION))
 
-            top_left_green_station_ids = [
-                StationID.PARK_STREET_NORTH if north_d_currently_arriving else None,
-                StationID.PARK_STREET_NORTH if north_e_currently_arriving else None,
-            ]
-            if any(station_id and should_animate(station_id) for station_id in top_left_green_station_ids):
+            if (north_d_currently_arriving or north_e_currently_arriving) and should_animate(StationID.PARK_STREET_NORTH):
                 arrivals_to_animate.append((TextColor.GREEN.value, display.TOP_LEFT_ALERT_LOCATION))
 
             if arrivals_to_animate:
@@ -183,6 +183,7 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
         except asyncio.CancelledError:
             raise
         except Exception as e:
+            print(f"Error: {e}")
             await asyncio.sleep(INTERVAL_SECONDS)
 
 
@@ -192,8 +193,8 @@ async def sprite_sync_loop():
             await asyncio.get_event_loop().run_in_executor(None, sync_sprites)
         except asyncio.CancelledError:
             raise
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error: {e}")
         await asyncio.sleep(300)
 
 
@@ -204,8 +205,8 @@ async def queue_check_loop():
             await asyncio.get_event_loop().run_in_executor(None, _process_queue)
         except asyncio.CancelledError:
             raise
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error: {e}")
 
 
 async def main():
