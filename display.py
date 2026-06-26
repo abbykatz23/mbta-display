@@ -15,19 +15,19 @@ PIXOO_IP = settings.pixoo_ip_address
 _UUID_RE = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 
 _HARDCODED_SPECIAL_TRAINS = {
-    "june": {"birthday_month": 6},
-    "july": {"birthday_month": 7},
-    "april": {"birthday_month": 4},
-    "may": {"birthday_month": 5},
+    "june": {"birthday_month": 6, "flip_rtl": True},
+    "july": {"birthday_month": 7, "flip_rtl": False},
+    "april": {"birthday_month": 4, "flip_rtl": True},
+    "may": {"birthday_month": 5, "flip_rtl": True},
     "march": {"birthday_month": 3, "flip_rtl": True},
-    "december": {"birthday_month": 12},
-    "february": {"birthday_month": 2},
-    "september": {"birthday_month": 9},
-    "january": {"birthday_month": 1},
-    "november": {"birthday_month": 11},
-    "october": {"birthday_month": 10},
-    "august": {"birthday_month": 8},
-    "roommates": {"birthday": "08-01"},
+    "december": {"birthday_month": 12, "flip_rtl": True},
+    "february": {"birthday_month": 2, "flip_rtl": True},
+    "september": {"birthday_month": 9, "flip_rtl": True},
+    "january": {"birthday_month": 1, "flip_rtl": True},
+    "november": {"birthday_month": 11, "flip_rtl": True},
+    "october": {"birthday_month": 10, "flip_rtl": True},
+    "august": {"birthday_month": 8, "flip_rtl": True},
+    "roommates": {"birthday": "08-01", "flip_rtl": False},
 }
 
 
