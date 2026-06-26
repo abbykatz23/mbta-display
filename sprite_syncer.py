@@ -45,8 +45,6 @@ def sync_sprites() -> None:
         return
 
     sprites = response.json()
-    if not sprites:
-        return
 
     metadata = _read_metadata()
     for sprite in sprites:
@@ -67,9 +65,36 @@ def sync_sprites() -> None:
         }
         logger.info("Synced sprite %s", sprite_id)
 
+    _sync_special_train_metadata(metadata)
+
     _write_metadata(metadata)
     _write_last_synced(datetime.now(timezone.utc).isoformat())
     _process_queue()
+
+
+def _sync_special_train_metadata(metadata: dict) -> None:
+    """Fetch admin-configured special train settings (e.g. flip_rtl) into metadata."""
+    try:
+        response = requests.get(
+            f"{settings.mbta_server_url}/special-trains",
+            headers={"X-API-Key": settings.pi_api_key},
+            timeout=10,
+        )
+        response.raise_for_status()
+    except Exception as e:
+        logger.warning("Special train metadata sync failed: %s", e)
+        return
+
+    for train in response.json():
+        name = train.get("name")
+        if not name:
+            continue
+        entry = {"flip_rtl": bool(train.get("flip_rtl", False))}
+        if "birthday_month" in train:
+            entry["birthday_month"] = train["birthday_month"]
+        if "birthday" in train:
+            entry["birthday"] = train["birthday"]
+        metadata[name] = entry
 
 
 def _build_multi_car_sprite(car: Image.Image) -> Image.Image:

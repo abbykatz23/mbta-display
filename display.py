@@ -27,7 +27,7 @@ _HARDCODED_SPECIAL_TRAINS = {
     "november": {"birthday_month": 11},
     "october": {"birthday_month": 10},
     "august": {"birthday_month": 8},
-    "roommates": {},
+    "roommates": {"birthday": "08-01"},
 }
 
 
