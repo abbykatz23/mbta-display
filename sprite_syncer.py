@@ -45,30 +45,30 @@ def sync_sprites() -> None:
         return
 
     sprites = response.json()
-    if not sprites:
-        return
+    if sprites:
+        metadata = _read_metadata()
+        for sprite in sprites:
+            sprite_id = sprite["id"]
+            if not _UUID_RE.match(sprite_id):
+                logger.warning("Skipping sprite with invalid id: %r", sprite_id)
+                continue
+            png_path = SPECIAL_TRAINS_DIR / f"{sprite_id}.png"
+            png_bytes = base64.b64decode(sprite["png_base64"])
+            car = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+            multi = _build_multi_car_sprite(car)
+            buf = io.BytesIO()
+            multi.save(buf, format="PNG")
+            png_path.write_bytes(buf.getvalue())
+            metadata[sprite_id] = {
+                "birthday": sprite["birthday"],
+                "flip_rtl": sprite.get("flip_rtl", True),
+            }
+            logger.info("Synced sprite %s", sprite_id)
 
-    metadata = _read_metadata()
-    for sprite in sprites:
-        sprite_id = sprite["id"]
-        if not _UUID_RE.match(sprite_id):
-            logger.warning("Skipping sprite with invalid id: %r", sprite_id)
-            continue
-        png_path = SPECIAL_TRAINS_DIR / f"{sprite_id}.png"
-        png_bytes = base64.b64decode(sprite["png_base64"])
-        car = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
-        multi = _build_multi_car_sprite(car)
-        buf = io.BytesIO()
-        multi.save(buf, format="PNG")
-        png_path.write_bytes(buf.getvalue())
-        metadata[sprite_id] = {
-            "birthday": sprite["birthday"],
-            "flip_rtl": sprite.get("flip_rtl", True),
-        }
-        logger.info("Synced sprite %s", sprite_id)
+        _write_metadata(metadata)
+        _write_last_synced(datetime.now(timezone.utc).isoformat())
 
-    _write_metadata(metadata)
-    _write_last_synced(datetime.now(timezone.utc).isoformat())
+    _prune_deleted_sprites()
     _process_queue()
 
 
@@ -105,6 +105,50 @@ def _build_multi_car_sprite(car: Image.Image) -> Image.Image:
             col += 1
 
     return assembled
+
+
+def _prune_deleted_sprites() -> None:
+    """Delete local user sprites that no longer exist on the server."""
+    try:
+        response = requests.get(
+            f"{settings.mbta_server_url}/sprite-ids",
+            headers={"X-API-Key": settings.pi_api_key},
+            timeout=10,
+        )
+        response.raise_for_status()
+        valid_ids = set(response.json().get("ids", []))
+    except Exception as e:
+        logger.warning("Could not fetch sprite ids for pruning: %s", e)
+        return
+
+    metadata = _read_metadata()
+    removed = False
+    for png_path in list(SPECIAL_TRAINS_DIR.glob("*.png")):
+        sprite_id = png_path.stem
+        if not _UUID_RE.match(sprite_id):
+            continue
+        if sprite_id not in valid_ids:
+            png_path.unlink(missing_ok=True)
+            metadata.pop(sprite_id, None)
+            _remove_from_priority_queue(sprite_id)
+            removed = True
+            logger.info("Pruned deleted sprite %s", sprite_id)
+
+    if removed:
+        _write_metadata(metadata)
+
+
+def _remove_from_priority_queue(sprite_id: str) -> None:
+    queue_path = SPECIAL_TRAINS_DIR / "priority_queue.json"
+    if not queue_path.exists():
+        return
+    try:
+        queue = json.loads(queue_path.read_text())
+    except Exception as e:
+        logger.warning("Could not parse priority_queue.json: %s", e)
+        return
+    if sprite_id in queue:
+        queue_path.write_text(json.dumps([q for q in queue if q != sprite_id]))
 
 
 def _process_queue() -> None:
