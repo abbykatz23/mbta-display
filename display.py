@@ -1,4 +1,5 @@
 from pixoo import Pixoo
+import io
 import json
 import re
 import random
@@ -407,11 +408,49 @@ class Display():
             loops=loops,
         )
 
+    def resolve_and_encode_arrivals(
+            self,
+            arrivals: list[tuple[tuple[int, int, int], tuple[int, int]]],
+    ) -> dict[tuple[int, int], bytes]:
+        """
+        Resolve sprites (including special-train selection and RTL flip) for each arrival
+        location. Returns {location: png_bytes}. Call this ONCE before both pushing state
+        to the server and animating, so the priority queue is only consumed a single time.
+        """
+        colors_by_location: dict[tuple[int, int], set[tuple[int, int, int]]] = {}
+        for color, location in arrivals:
+            colors_by_location.setdefault(location, set()).add(color)
+
+        result: dict[tuple[int, int], bytes] = {}
+        for location, colors in colors_by_location.items():
+            sprite_path = self._resolve_sprite_path(colors)
+            if not sprite_path:
+                continue
+            sprite_path = self._maybe_override_with_special_train(sprite_path)
+
+            direction = (
+                AnimationDirection.RIGHT_TO_LEFT
+                if location == self.BOTTOM_RIGHT_ALERT_LOCATION
+                else AnimationDirection.LEFT_TO_RIGHT
+            )
+            sprite = Image.open(sprite_path).convert("RGBA")
+            if direction == AnimationDirection.RIGHT_TO_LEFT:
+                sprite_id = Path(sprite_path).stem
+                if self._load_special_train_metadata().get(sprite_id, {}).get("flip_rtl"):
+                    sprite = sprite.transpose(Image.FLIP_LEFT_RIGHT)
+
+            buf = io.BytesIO()
+            sprite.save(buf, format="PNG")
+            result[location] = buf.getvalue()
+
+        return result
+
     def blink_and_animate_arrivals(
             self,
             arrivals: list[tuple[tuple[int, int, int], tuple[int, int]]],
             fps: int = 35,
             loops: int = 1,
+            pre_resolved: dict[tuple[int, int], bytes] | None = None,
     ):
         if not arrivals:
             return
@@ -422,11 +461,6 @@ class Display():
 
         valid_arrivals: list[dict] = []
         for location, colors in colors_by_location.items():
-            sprite_path = self._resolve_sprite_path(colors)
-            if not sprite_path:
-                continue
-            sprite_path = self._maybe_override_with_special_train(sprite_path)
-
             if location == self.BOTTOM_RIGHT_ALERT_LOCATION:
                 y = 41
                 direction = AnimationDirection.RIGHT_TO_LEFT
@@ -434,11 +468,18 @@ class Display():
                 y = 17
                 direction = AnimationDirection.LEFT_TO_RIGHT
 
-            sprite = Image.open(sprite_path).convert("RGBA")
-            if direction == AnimationDirection.RIGHT_TO_LEFT:
-                sprite_id = Path(sprite_path).stem
-                if self._load_special_train_metadata().get(sprite_id, {}).get("flip_rtl"):
-                    sprite = sprite.transpose(Image.FLIP_LEFT_RIGHT)
+            if pre_resolved and location in pre_resolved:
+                sprite = Image.open(io.BytesIO(pre_resolved[location])).convert("RGBA")
+            else:
+                sprite_path = self._resolve_sprite_path(colors)
+                if not sprite_path:
+                    continue
+                sprite_path = self._maybe_override_with_special_train(sprite_path)
+                sprite = Image.open(sprite_path).convert("RGBA")
+                if direction == AnimationDirection.RIGHT_TO_LEFT:
+                    sprite_id = Path(sprite_path).stem
+                    if self._load_special_train_metadata().get(sprite_id, {}).get("flip_rtl"):
+                        sprite = sprite.transpose(Image.FLIP_LEFT_RIGHT)
             sw, sh = sprite.size
             if sh != 5:
                 raise ValueError(f"Expected sprite height 5px, got {sh}px")

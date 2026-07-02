@@ -1,4 +1,5 @@
 import asyncio
+import base64
 from datetime import datetime, timedelta, timezone
 from dateutil.tz import gettz
 
@@ -22,18 +23,32 @@ COLOR_NAME = {
 }
 
 
-def push_display_state(predictions: dict, arrivals_to_animate: list) -> None:
+def push_display_state(
+    predictions: dict,
+    arrivals_to_animate: list,
+    pre_resolved: dict,
+) -> None:
     if not settings.mbta_server_url or not settings.pi_api_key:
         return
-    arrival_list = []
+
+    colors_by_location: dict = {}
     for color, location in arrivals_to_animate:
+        colors_by_location.setdefault(location, set()).add(color)
+
+    arrival_list = []
+    for location, colors in colors_by_location.items():
         lane = "bottom_right" if location == Display.BOTTOM_RIGHT_ALERT_LOCATION else "top_left"
         direction = "right_to_left" if lane == "bottom_right" else "left_to_right"
+        sprite_b64 = None
+        if location in pre_resolved:
+            sprite_b64 = base64.b64encode(pre_resolved[location]).decode()
         arrival_list.append({
-            "colors": [COLOR_NAME.get(color, "green")],
+            "colors": [COLOR_NAME.get(c, "green") for c in colors],
             "lane": lane,
             "direction": direction,
+            "sprite_b64": sprite_b64,
         })
+
     payload = {
         "pushed_at": datetime.now(timezone.utc).isoformat(),
         "predictions": predictions,
@@ -226,10 +241,14 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
                 "ashmont_braintree": [ashmont_braintree_min_to_nct_1, ashmont_braintree_min_to_nct_2],
                 "forest_hills":      [ol_s_min_to_nct_1, ol_s_min_to_nct_2],
             }
-            push_display_state(_predictions, arrivals_to_animate)
+            _pre_resolved = (
+                display.resolve_and_encode_arrivals(arrivals_to_animate)
+                if arrivals_to_animate else {}
+            )
+            push_display_state(_predictions, arrivals_to_animate, _pre_resolved)
 
             if arrivals_to_animate:
-                display.blink_and_animate_arrivals(arrivals_to_animate)
+                display.blink_and_animate_arrivals(arrivals_to_animate, pre_resolved=_pre_resolved)
 
             await asyncio.sleep(INTERVAL_SECONDS)
         except asyncio.CancelledError:
