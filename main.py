@@ -1,16 +1,53 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dateutil.tz import gettz
 
+import requests
+
 from mbta_client import MBTAClient
-from enums import StationID, RouteID, TextColor
+from enums import StationID, RouteID, TextColor, AnimationDirection
 from display import Display
-from settings import COMMUTE_TIMES
+from settings import COMMUTE_TIMES, settings
 from sprite_syncer import sync_sprites, _process_queue
 
 INTERVAL_SECONDS = 20
 EASTERN = gettz("America/New_York")
 ARRIVAL_ANIMATION_COOLDOWN_MINUTES = 3
+
+COLOR_NAME = {
+    TextColor.RED.value: "red",
+    TextColor.ORANGE.value: "orange",
+    TextColor.GREEN.value: "green",
+    TextColor.BLUE.value: "blue",
+}
+
+
+def push_display_state(predictions: dict, arrivals_to_animate: list) -> None:
+    if not settings.mbta_server_url or not settings.pi_api_key:
+        return
+    arrival_list = []
+    for color, location in arrivals_to_animate:
+        lane = "bottom_right" if location == Display.BOTTOM_RIGHT_ALERT_LOCATION else "top_left"
+        direction = "right_to_left" if lane == "bottom_right" else "left_to_right"
+        arrival_list.append({
+            "colors": [COLOR_NAME.get(color, "green")],
+            "lane": lane,
+            "direction": direction,
+        })
+    payload = {
+        "pushed_at": datetime.now(timezone.utc).isoformat(),
+        "predictions": predictions,
+        "arrivals": arrival_list,
+    }
+    try:
+        requests.put(
+            f"{settings.mbta_server_url}/display-state",
+            json=payload,
+            headers={"X-API-Key": settings.pi_api_key},
+            timeout=5,
+        )
+    except Exception as e:
+        print(f"display-state push failed: {e}")
 
 
 async def poll_loop(mbta_client: MBTAClient, display: Display):
@@ -175,6 +212,21 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
 
             if (north_d_currently_arriving or north_e_currently_arriving) and should_animate(StationID.PARK_STREET_NORTH):
                 arrivals_to_animate.append((TextColor.GREEN.value, display.TOP_LEFT_ALERT_LOCATION))
+
+            _predictions = {
+                "north_d":           [north_d_min_to_nct_1, north_d_min_to_nct_2],
+                "north_e":           [north_e_min_to_nct_1, north_e_min_to_nct_2],
+                "wonderland":        [won_min_to_nct_1, won_min_to_nct_2],
+                "b":                 [b_min_to_nct_1, b_min_to_nct_2],
+                "c":                 [c_min_to_nct_1, c_min_to_nct_2],
+                "alewife":           [alewife_min_to_nct_1, alewife_min_to_nct_2],
+                "oak_grove":         [ol_n_min_to_nct_1, ol_n_min_to_nct_2],
+                "d":                 [d_min_to_nct_1, d_min_to_nct_2],
+                "e":                 [e_min_to_nct_1, e_min_to_nct_2],
+                "ashmont_braintree": [ashmont_braintree_min_to_nct_1, ashmont_braintree_min_to_nct_2],
+                "forest_hills":      [ol_s_min_to_nct_1, ol_s_min_to_nct_2],
+            }
+            push_display_state(_predictions, arrivals_to_animate)
 
             if arrivals_to_animate:
                 display.blink_and_animate_arrivals(arrivals_to_animate)
