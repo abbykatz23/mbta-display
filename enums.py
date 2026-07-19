@@ -18,6 +18,7 @@ class UpdateType(StrEnum):
 class ScheduleRelationship(StrEnum):
     ADDED = "ADDED"
     CANCELLED = "CANCELLED"
+    SKIPPED = "SKIPPED"
 
 
 class Revenue(StrEnum):
