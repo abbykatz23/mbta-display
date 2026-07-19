@@ -31,7 +31,7 @@ MBTA v3 API ──▶ mbta-display (Pi) ──▶ mbta-server (Lambda/DynamoDB/S
 
 - Polls the MBTA v3 API every 20s for predictions at the stations on my commute
   (Park St B/C/D/E, Charles/MGH, Bowdoin, Downtown Crossing) and shows minutes until
-  I need to leave for each line, dimming the text as the deadline gets closer.
+  I need to leave for each line, with the text brightening as the deadline gets closer.
 - Animates a small pixel train across the display when a train is currently
   arriving, color-coded by line, with a cooldown so the same arrival doesn't
   re-trigger the animation repeatedly.
