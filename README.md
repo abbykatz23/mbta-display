@@ -48,12 +48,13 @@ https://github.com/user-attachments/assets/86fa24f6-b337-49e4-843e-48e608e25749
   people design/submit trains, browse a gallery, and watch a live simulation of the
   physical display in a browser.
 
-```
-MBTA v3 API <── mbta-display (Pi) <──> mbta-server (Lambda/DynamoDB/S3) <──> mbta-frontend
-                     │                        ▲
-                     ▼                        │
-              Pixoo LED display      submitted sprites, live state
-```
+
+https://excalidraw.com/#json=BRuBvz4900FrxCK2AZXIK,rJ98H-aRb1J4b7mux0_sFg
+
+
+<img width="6406" height="5211" alt="mbta-arch2" src="https://github.com/user-attachments/assets/17f89242-9c3f-46b7-8c7e-11965486e44e" />
+
+
 
 ## What it does
 
@@ -73,6 +74,7 @@ MBTA v3 API <── mbta-display (Pi) <──> mbta-server (Lambda/DynamoDB/S3) 
 
 Python 3.12, `asyncio`, [`pixoo`](https://pypi.org/project/pixoo/) (Divoom Pixoo64
 SDK), Pillow, Pydantic/`pydantic-settings`.
+
 
 ## Running it (requires the Divoom display to see anything interesting!)
 
