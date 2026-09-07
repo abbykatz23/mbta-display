@@ -4,6 +4,7 @@ import json
 import re
 import random
 import time
+import requests
 from datetime import date, datetime
 from pathlib import Path
 from PIL import Image
@@ -47,6 +48,8 @@ class Display():
     BIRTHDAY_MONTH_DENOMINATOR = 6
     RANDOM_SPECIAL_DENOMINATOR = 50
     SPECIAL_TRAIN_METADATA_CACHE_SECONDS = 60
+    CUSTOM_CHANNEL_INDEX = 3
+    CLOCK_CHANNEL_INDEX = 0
     COLOR_NAME_BY_VALUE = {
         TextColor.RED.value: "red",
         TextColor.ORANGE.value: "orange",
@@ -60,6 +63,38 @@ class Display():
         self._sprite_path_by_color_set: dict[frozenset[str], str] | None = None
         self._special_train_metadata: dict = {}
         self._special_train_metadata_loaded_at = datetime.min
+        self._quiet_hours_active = False
+        self._ensure_custom_channel()
+
+    def _ensure_custom_channel(self):
+        try:
+            requests.post(
+                f"http://{PIXOO_IP}/post",
+                json={"Command": "Channel/SetIndex", "SelectIndex": self.CUSTOM_CHANNEL_INDEX},
+                timeout=5,
+            )
+        except Exception as e:
+            print(f"Warning: could not confirm Pixoo channel: {e}")
+
+    def enter_quiet_hours(self):
+        if self._quiet_hours_active:
+            return
+        self._quiet_hours_active = True
+        self.static_layout_drawn = False
+        try:
+            requests.post(
+                f"http://{PIXOO_IP}/post",
+                json={"Command": "Channel/SetIndex", "SelectIndex": self.CLOCK_CHANNEL_INDEX},
+                timeout=5,
+            )
+        except Exception as e:
+            print(f"Warning: could not switch Pixoo to quiet-hours face: {e}")
+
+    def exit_quiet_hours(self):
+        if not self._quiet_hours_active:
+            return
+        self._quiet_hours_active = False
+        self._ensure_custom_channel()
 
     def black_screen(self):
         self.display.fill_rgb(0,0,0)

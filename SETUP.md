@@ -68,3 +68,56 @@ steps once this is set up.
 ```bash
 systemctl status mbta-display
 ```
+
+## Troubleshooting
+
+**Logs:**
+
+```bash
+journalctl -u mbta-display -f          # live tail
+journalctl -u mbta-display -n 100      # last 100 lines
+```
+
+**After editing `.env`, restart the service.** `PIXOO_IP_ADDRESS` etc. are only read once at
+process startup (`pydantic-settings`), so editing `.env` on a running service does nothing until
+you `sudo systemctl restart mbta-display`.
+
+**After a router/network change** (new ISP, new wifi carrier, etc.), both the Pi and the Pixoo
+can get reassigned IPs, even if the Pixoo already had a DHCP reservation on the old router. If
+logs show something like:
+
+```
+HTTPConnectionPool(host='X.X.X.X', port=80): ... Connection refused
+```
+
+double check that `PIXOO_IP_ADDRESS` is actually the Pixoo's current IP and not, say, the Pi's
+own IP by mistake — run `hostname -I` on the Pi and compare. Find the Pixoo's real IP via the
+Divoom app (device settings) or the router's DHCP client list, update `.env`, then restart the
+service. Re-adding a DHCP reservation for the Pixoo's MAC on the new router prevents this from
+recurring.
+
+**Service is running with no errors, but the Pixoo shows nothing / shows something else:** the
+Divoom has multiple "channels" (Clock/Faces, Cloud, Visualizer, Custom) and this app only ever
+draws to the Custom channel. The `Display` class forces the device onto Custom once on startup,
+so a power cycle self-heals as soon as the service comes back up — you shouldn't need to fix this
+by hand after a reboot anymore. This only happens at startup (not on every poll), so you're free
+to manually switch the Pixoo to another channel via the Divoom app while the service is running;
+it'll just switch back to Custom the next time the service restarts. If it's stuck on the wrong
+channel and you don't want to restart the service (e.g. the Pixoo was unreachable at startup),
+force it manually:
+
+Check the current channel:
+
+```bash
+curl -s -X POST http://<PIXOO_IP>/post -d '{"Command":"Channel/GetIndex"}'
+```
+
+Force it back to Custom (index 3):
+
+```bash
+curl -s -X POST http://<PIXOO_IP>/post -d '{"Command":"Channel/SetIndex","SelectIndex":3}'
+```
+
+If curl can't connect to the Pixoo at all (`Connection refused`, or the source address in
+`curl -v` matches the Pi's own IP), that's the stale-IP issue above, not a channel issue — fix
+`.env` first.

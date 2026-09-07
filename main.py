@@ -1,6 +1,6 @@
 import asyncio
 import base64
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from dateutil.tz import gettz
 
 import requests
@@ -14,6 +14,8 @@ from sprite_syncer import sync_sprites, _process_queue
 INTERVAL_SECONDS = 20
 EASTERN = gettz("America/New_York")
 ARRIVAL_ANIMATION_COOLDOWN_MINUTES = 3
+QUIET_HOURS_START = time(0, 30)
+QUIET_HOURS_END = time(5, 30)
 
 COLOR_NAME = {
     TextColor.RED.value: "red",
@@ -71,6 +73,12 @@ async def poll_loop(mbta_client: MBTAClient, display: Display):
     while True:
         try:
             now = datetime.now(EASTERN)
+
+            if QUIET_HOURS_START <= now.time() < QUIET_HOURS_END:
+                display.enter_quiet_hours()
+                await asyncio.sleep(INTERVAL_SECONDS)
+                continue
+            display.exit_quiet_hours()
 
             (
                 b_currently_arriving,

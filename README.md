@@ -69,6 +69,9 @@ https://excalidraw.com/#json=BRuBvz4900FrxCK2AZXIK,rJ98H-aRb1J4b7mux0_sFg
   birthday-week and birthday-month odds boosts for the submitter's own sprite.
 - Pushes its current state to `mbta-server` on every poll cycle so `mbta-frontend`
   can render a live simulation of the display for anyone browsing the site.
+- Switches the Pixoo to the Clock channel during hours the T isn't running
+  (12:30am-5:30am), then back to the live train display afterward. Whichever
+  face is selected on that channel via the Divoom app is what shows.
 
 ## Stack
 
